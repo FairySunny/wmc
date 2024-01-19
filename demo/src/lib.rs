@@ -69,7 +69,6 @@ struct State {
     chunk: SimpleChunk,
     i: usize,
     scene: renderer::terrain::Scene,
-    scene_buffer: wgpu::Buffer,
     texture_bind_group: wgpu::BindGroup,
     camera: camera::Camera,
     camera_buffer: wgpu::Buffer,
@@ -126,9 +125,8 @@ impl State {
             ([2, 1, 1], 1),
             ([2, 1, 2], 1)
         ]);
-        let mut scene = renderer::terrain::Scene::new();
-        scene.update(&chunk);
-        let scene_buffer = scene.create_buffer(&device);
+        let mut scene = renderer::terrain::Scene::new(&device);
+        scene.update(&device, &queue, &chunk);
 
         let texture_bytes = include_bytes!("test.png");
         let texture_image = texture::Image::from_bytes(texture_bytes).unwrap();
@@ -250,7 +248,6 @@ impl State {
             chunk,
             i: 2,
             scene,
-            scene_buffer,
             texture_bind_group,
             camera,
             camera_buffer,
@@ -291,8 +288,7 @@ impl State {
                         ([2, self.i, 1], 1),
                         ([2, self.i, 2], 1)
                     ]);
-                    self.scene.update(&self.chunk);
-                    self.scene_buffer = self.scene.create_buffer(&self.device);
+                    self.scene.update(&self.device, &self.queue, &self.chunk);
                     self.i += 1;
                     return true;
                 }
@@ -305,8 +301,7 @@ impl State {
                         ([2, self.i, 1], 0),
                         ([2, self.i, 2], 0)
                     ]);
-                    self.scene.update(&self.chunk);
-                    self.scene_buffer = self.scene.create_buffer(&self.device);
+                    self.scene.update(&self.device, &self.queue, &self.chunk);
                     return true;
                 }
                 _ => {}
@@ -353,7 +348,7 @@ impl State {
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, &self.texture_bind_group, &[]);
         render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
-        render_pass.set_vertex_buffer(0, self.scene_buffer.slice(..));
+        render_pass.set_vertex_buffer(0, self.scene.buffer().slice(..));
         render_pass.draw(0..6, 0..self.scene.len() as u32);
 
         drop(render_pass);

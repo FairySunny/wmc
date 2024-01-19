@@ -17,7 +17,8 @@ struct Face {
 }
 
 pub struct Scene {
-    faces: Vec<Face>
+    faces: Vec<Face>,
+    buffer: crate::utils::DynamicBuffer
 }
 
 pub trait WorldInterface {
@@ -26,11 +27,19 @@ pub trait WorldInterface {
 }
 
 impl Scene {
-    pub fn new() -> Self {
-        Self { faces: vec![] }
+    pub fn new(device: &wgpu::Device) -> Self {
+        Self {
+            faces: vec![],
+            buffer: crate::utils::DynamicBuffer::new(
+                device,
+                "[terrain] Face Instance Buffer".into(),
+                512,
+                wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST
+            )
+        }
     }
 
-    pub fn update(&mut self, world: &impl WorldInterface) {
+    pub fn update(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, world: &impl WorldInterface) {
         let reserved = self.faces.iter().filter_map(|face| {
             let block = world.get_block(&face.coord);
             let new_texture = match block {
@@ -70,6 +79,16 @@ impl Scene {
         });
 
         self.faces = reserved.chain(added).collect();
+
+        self.buffer.update(device, queue, bytemuck::cast_slice(&self.faces));
+    }
+
+    pub fn len(&self) -> usize {
+        self.faces.len()
+    }
+
+    pub fn buffer(&self) -> &wgpu::Buffer {
+        self.buffer.buffer()
     }
 
     pub fn buffer_layout<const N: u32>() -> wgpu::VertexBufferLayout<'static> {
@@ -94,18 +113,6 @@ impl Scene {
                 }
             ]
         }
-    }
-
-    pub fn create_buffer(&self, device: &wgpu::Device) -> wgpu::Buffer {
-        wgpu::util::DeviceExt::create_buffer_init(device, &wgpu::util::BufferInitDescriptor {
-            label: Some("[terrain] Face Instance Buffer"),
-            contents: bytemuck::cast_slice(&self.faces),
-            usage: wgpu::BufferUsages::VERTEX
-        })
-    }
-
-    pub fn len(&self) -> usize {
-        self.faces.len()
     }
 
     pub fn texture_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
