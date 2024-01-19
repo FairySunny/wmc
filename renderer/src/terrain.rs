@@ -25,56 +25,6 @@ pub trait WorldInterface {
     fn get_updated_block_coords(&self) -> &[[i32; 3]];
 }
 
-pub struct SimpleChunk {
-    data: Box<[u32; 100 * 16 * 16]>,
-    updated: Vec<[i32; 3]>
-}
-
-impl SimpleChunk {
-    pub fn new() -> Self {
-        Self {
-            data: Box::new([0; 100 * 16 * 16]),
-            updated: vec![]
-        }
-    }
-
-    fn index(coord: &[usize; 3]) -> usize {
-        coord[1] * 16 * 16 + coord[0] * 16 + coord[2]
-    }
-
-    pub fn get(&self, coord: &[usize; 3]) -> u32 {
-        self.data[Self::index(coord)]
-    }
-
-    pub fn get_mut(&mut self, coord: &[usize; 3]) -> &mut u32 {
-        &mut self.data[Self::index(coord)]
-    }
-
-    pub fn update(&mut self, list: &[([usize; 3], u32)]) {
-        let mut updated = vec![];
-        for (coord, new_block) in list {
-            let block = self.get_mut(coord);
-            if *block == 0 && *new_block != 0 || *block != 0 && *new_block == 0 {
-                updated.push([coord[0] as i32, coord[1] as i32, coord[2] as i32]);
-            }
-            *block = *new_block;
-        }
-        self.updated = updated;
-    }
-}
-
-impl WorldInterface for SimpleChunk {
-    fn get_block(&self, coord: &[i32; 3]) -> Option<u32> {
-        let coord = [coord[0] as usize, coord[1] as usize, coord[2] as usize];
-        let new = self.get(&coord);
-        if new == 0 { None } else { Some(new) }
-    }
-
-    fn get_updated_block_coords(&self) -> &[[i32; 3]] {
-        &self.updated
-    }
-}
-
 impl Scene {
     pub fn new() -> Self {
         Self { faces: vec![] }

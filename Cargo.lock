@@ -1233,9 +1233,7 @@ dependencies = [
  "bytemuck",
  "env_logger",
  "log",
- "pollster",
  "wgpu",
- "winit",
 ]
 
 [[package]]

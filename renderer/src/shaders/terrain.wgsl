@@ -27,10 +27,10 @@ fn vs_main(@builtin(vertex_index) idx: u32, instance: InstanceInput) -> @builtin
         f32(pos_bits >> (0u + dir_axis) % 3u & 1u)
     );
 
-    return camera.view_proj_mat * vec4<f32>(pos, 1.0);
+    return camera.view_proj_mat * vec4(pos, 1.0);
 }
 
 @fragment
 fn fs_main() -> @location(0) vec4<f32> {
-    return vec4<f32>(0.0, 1.0, 0.0, 1.0);
+    return vec4(0.0, 1.0, 0.0, 1.0);
 }
