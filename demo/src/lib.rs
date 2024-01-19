@@ -70,6 +70,7 @@ struct State {
     i: usize,
     scene: renderer::terrain::Scene,
     scene_buffer: wgpu::Buffer,
+    texture_bind_group: wgpu::BindGroup,
     camera: camera::Camera,
     camera_buffer: wgpu::Buffer,
     camera_control: camera::CameraControl,
@@ -129,6 +130,20 @@ impl State {
         scene.update(&chunk);
         let scene_buffer = scene.create_buffer(&device);
 
+        let texture_bytes = include_bytes!("test.png");
+        let texture_image = texture::Image::from_bytes(texture_bytes).unwrap();
+
+        let texture_bind_group_layout = renderer::terrain::Scene::texture_bind_group_layout(&device);
+
+        let texture_bind_group = renderer::terrain::Scene::create_texture(
+            &device,
+            &queue,
+            &texture_bind_group_layout,
+            texture_image.width,
+            texture_image.height,
+            &texture_image.data
+        );
+
         let camera = camera::Camera {
             pos: (4.0, 3.0, 4.0).into(),
             yaw: cgmath::Deg(-135.0),
@@ -176,7 +191,10 @@ impl State {
 
         let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("[demo] Render Pipeline Layout"),
-            bind_group_layouts: &[&camera_bind_group_layout],
+            bind_group_layouts: &[
+                &texture_bind_group_layout,
+                &camera_bind_group_layout
+            ],
             push_constant_ranges: &[]
         });
 
@@ -233,6 +251,7 @@ impl State {
             i: 2,
             scene,
             scene_buffer,
+            texture_bind_group,
             camera,
             camera_buffer,
             camera_bind_group,
@@ -332,7 +351,8 @@ impl State {
         });
 
         render_pass.set_pipeline(&self.render_pipeline);
-        render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
+        render_pass.set_bind_group(0, &self.texture_bind_group, &[]);
+        render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.scene_buffer.slice(..));
         render_pass.draw(0..6, 0..self.scene.len() as u32);
 
