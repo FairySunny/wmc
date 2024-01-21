@@ -38,7 +38,9 @@ impl DynamicBuffer {
     }
 }
 
-pub fn generate_mipmaps(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wgpu::Texture, mip_cnt: u32) {
+pub fn generate_mipmaps(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wgpu::Texture) {
+    let mip_cnt = texture.mip_level_count();
+
     let shader = device.create_shader_module(wgpu::include_wgsl!("shaders/mipmap.wgsl"));
 
     let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
