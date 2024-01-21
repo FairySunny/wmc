@@ -27,7 +27,10 @@ fn vs_main(@builtin(vertex_index) idx: u32, instance: InstanceInput) -> VertexOu
     if dir_offset == 1u { pos_bits = 5u - pos_bits; }
     if pos_bits >= 3u { pos_bits = 6u - pos_bits; }
 
-    out.tex_coords = vec2(f32(pos_bits & 1u), f32(pos_bits >> 1u & 1u));
+    out.tex_coords = vec2(
+        f32((instance.tex_id & 15u) + (pos_bits & 1u)),
+        f32((instance.tex_id >> 4u) + (pos_bits >> 1u & 1u))
+    ) / 16.0;
 
     if dir_offset == 1u { pos_bits |= 4u; }
 

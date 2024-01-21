@@ -121,14 +121,14 @@ impl State {
         let mut chunk = SimpleChunk::new();
         chunk.update(&[
             ([1, 1, 1], 1),
-            ([1, 1, 2], 1),
-            ([2, 1, 1], 1),
+            ([1, 1, 2], 2),
+            ([2, 1, 1], 2),
             ([2, 1, 2], 1)
         ]);
         let mut scene = renderer::terrain::Scene::new(&device);
         scene.update(&device, &queue, &chunk);
 
-        let texture_bytes = include_bytes!("test.png");
+        let texture_bytes = include_bytes!("texture.png");
         let texture_image = texture::Image::from_bytes(texture_bytes).unwrap();
 
         let texture_bind_group_layout = renderer::terrain::Scene::texture_bind_group_layout(&device);
@@ -282,11 +282,12 @@ impl State {
             match code {
                 winit::event::VirtualKeyCode::Key1 => {
                     if self.i > 10 { return true; }
+                    let i = self.i as u32;
                     self.chunk.update(&[
-                        ([1, self.i, 1], 1),
-                        ([1, self.i, 2], 1),
-                        ([2, self.i, 1], 1),
-                        ([2, self.i, 2], 1)
+                        ([1, self.i, 1], (i + 1) % 2 + 1),
+                        ([1, self.i, 2], (i + 2) % 2 + 1),
+                        ([2, self.i, 1], (i + 2) % 2 + 1),
+                        ([2, self.i, 2], (i + 1) % 2 + 1)
                     ]);
                     self.scene.update(&self.device, &self.queue, &self.chunk);
                     self.i += 1;
