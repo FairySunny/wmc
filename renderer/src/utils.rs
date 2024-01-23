@@ -18,6 +18,7 @@ impl DynamicBuffer {
     pub fn update(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, data: &[u8]) {
         let data_size = data.len() as wgpu::BufferAddress;
         let old_size = self.buffer.size();
+        eprintln!("{} / {}", data_size, old_size);
         if data_size > old_size {
             let mut new_size = old_size;
             while new_size < data_size { new_size *= 2; }

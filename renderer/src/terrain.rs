@@ -1,11 +1,38 @@
-fn opposite_direction(direction: u32) -> u32 {
-    direction ^ 1
+#[derive(Clone, Copy)]
+pub struct Direction(pub u8);
+
+impl Direction {
+    pub fn opposite(self) -> Self {
+        Self(self.0 ^ 1)
+    }
 }
 
-fn next_coord(coord: &[i32; 3], direction: u32) -> [i32; 3] {
-    let mut next = *coord;
-    next[(direction >> 1) as usize] += ((direction & 1) << 1) as i32 - 1;
-    next
+pub struct IntCoord(pub [i32; 3]);
+
+impl IntCoord {
+    pub fn next(&self, direction: Direction) -> Self {
+        let mut next = self.0;
+        next[(direction.0 >> 1) as usize] += ((direction.0 & 1) << 1) as i32 - 1;
+        Self(next)
+    }
+}
+
+pub type TextureId = std::num::NonZeroU8;
+
+pub struct BlockModel {
+    pub faces: [Option<TextureId>; 6]
+}
+
+impl BlockModel {
+    pub fn face(&self, direction: Direction) -> Option<TextureId> {
+        self.faces[direction.0 as usize]
+    }
+}
+
+pub trait WorldInterface {
+    fn get_block(&self, coord: &IntCoord) -> &BlockModel;
+    fn is_updated(&self, coord: &IntCoord) -> bool;
+    fn get_updated_block_coords(&self) -> &[IntCoord];
 }
 
 #[repr(C)]
@@ -19,11 +46,6 @@ struct Face {
 pub struct Scene {
     faces: Vec<Face>,
     buffer: crate::utils::DynamicBuffer
-}
-
-pub trait WorldInterface {
-    fn get_block(&self, coord: &[i32; 3]) -> Option<u32>;
-    fn get_updated_block_coords(&self) -> &[[i32; 3]];
 }
 
 impl Scene {
@@ -40,18 +62,17 @@ impl Scene {
     }
 
     pub fn update(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, world: &impl WorldInterface) {
-        let reserved = self.faces.iter().filter_map(|face| {
-            let block = world.get_block(&face.coord);
-            let new_texture = match block {
-                Some(t) => t,
-                None => return None
-            };
+        let reserved = self.faces.drain(..).filter_map(|face| {
+            let coord = IntCoord(face.coord);
+            if world.is_updated(&coord) {
+                return None;
+            }
 
-            let facing_coord = next_coord(&face.coord, face.direction);
-            let facing_block = world.get_block(&facing_coord);
-            match facing_block {
-                Some(_) => None,
-                None => Some(Face { texture: new_texture, ..*face })
+            let facing_coord = coord.next(Direction(face.direction as u8));
+            if world.is_updated(&facing_coord) {
+                None
+            } else {
+                Some(face)
             }
         });
 
@@ -59,18 +80,29 @@ impl Scene {
             let block = world.get_block(coord);
 
             (0..6).filter_map(move |direction| {
-                let facing_coord = next_coord(coord, direction);
+                let dir = Direction(direction as u8);
+                let oppo_dir = dir.opposite();
+
+                let facing_coord = coord.next(dir);
                 let facing_block = world.get_block(&facing_coord);
-                match block {
-                    Some(texture) => match facing_block {
+
+                let face = block.face(dir);
+                let facing_face = facing_block.face(oppo_dir);
+
+                match face {
+                    Some(texture) => match facing_face {
                         Some(_) => None,
-                        None => Some(Face { coord: *coord, direction, texture })
+                        None => Some(Face {
+                            coord: coord.0,
+                            direction,
+                            texture: texture.get().into()
+                        })
                     }
-                    None => match facing_block {
+                    None => match facing_face {
                         Some(texture) => Some(Face {
-                            coord: facing_coord,
-                            direction: opposite_direction(direction),
-                            texture
+                            coord: facing_coord.0,
+                            direction: oppo_dir.0.into(),
+                            texture: texture.get().into()
                         }),
                         None => None
                     }

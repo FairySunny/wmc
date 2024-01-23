@@ -1,6 +1,7 @@
 mod texture;
 mod camera;
 
+use std::collections::HashSet;
 use wgpu::util::DeviceExt;
 use winit::{
     event_loop::{EventLoop, ControlFlow},
@@ -10,14 +11,16 @@ use winit::{
 
 pub struct SimpleChunk {
     data: Box<[u32; 100 * 16 * 16]>,
-    updated: Vec<[i32; 3]>
+    updated: Vec<renderer::terrain::IntCoord>,
+    updated_set: HashSet<[i32; 3]>
 }
 
 impl SimpleChunk {
     pub fn new() -> Self {
         Self {
             data: Box::new([0; 100 * 16 * 16]),
-            updated: vec![]
+            updated: vec![],
+            updated_set: HashSet::new()
         }
     }
 
@@ -35,25 +38,45 @@ impl SimpleChunk {
 
     pub fn update(&mut self, list: &[([usize; 3], u32)]) {
         let mut updated = vec![];
+        let mut updated_set = HashSet::new();
         for (coord, new_block) in list {
             let block = self.get_mut(coord);
-            if *block == 0 && *new_block != 0 || *block != 0 && *new_block == 0 {
-                updated.push([coord[0] as i32, coord[1] as i32, coord[2] as i32]);
+            if block != new_block {
+                let coord = [coord[0] as i32, coord[1] as i32, coord[2] as i32];
+                updated.push(renderer::terrain::IntCoord(coord));
+                updated_set.insert(coord);
+                *block = *new_block;
             }
-            *block = *new_block;
         }
         self.updated = updated;
+        self.updated_set = updated_set;
     }
 }
 
 impl renderer::terrain::WorldInterface for SimpleChunk {
-    fn get_block(&self, coord: &[i32; 3]) -> Option<u32> {
-        let coord = [coord[0] as usize, coord[1] as usize, coord[2] as usize];
+    fn get_block(&self, coord: &renderer::terrain::IntCoord) -> &renderer::terrain::BlockModel {
+        const MODELS: &[renderer::terrain::BlockModel] = &[
+            renderer::terrain::BlockModel {
+                faces: [None; 6]
+            },
+            renderer::terrain::BlockModel {
+                faces: [renderer::terrain::TextureId::new(1); 6]
+            },
+            renderer::terrain::BlockModel {
+                faces: [renderer::terrain::TextureId::new(2); 6]
+            }
+        ];
+
+        let coord = [coord.0[0] as usize, coord.0[1] as usize, coord.0[2] as usize];
         let new = self.get(&coord);
-        if new == 0 { None } else { Some(new) }
+        &MODELS[new as usize]
     }
 
-    fn get_updated_block_coords(&self) -> &[[i32; 3]] {
+    fn is_updated(&self, coord: &renderer::terrain::IntCoord) -> bool {
+        self.updated_set.contains(&coord.0)
+    }
+
+    fn get_updated_block_coords(&self) -> &[renderer::terrain::IntCoord] {
         &self.updated
     }
 }
