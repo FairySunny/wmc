@@ -92,7 +92,8 @@ pub struct CameraControl {
     cmds: u32,
     updated_at: instant::Instant,
     rot_right: f32,
-    rot_up: f32
+    rot_up: f32,
+    mouse_rot: bool
 }
 
 impl CameraControl {
@@ -101,7 +102,8 @@ impl CameraControl {
             cmds: 0,
             updated_at: instant::Instant::now(),
             rot_right: 0.0,
-            rot_up: 0.0
+            rot_up: 0.0,
+            mouse_rot: true
         }
     }
 
@@ -127,6 +129,10 @@ impl CameraControl {
                     VirtualKeyCode::A      => { cmds |= Camera::CMD_LEFT     ; true }
                     VirtualKeyCode::Space  => { cmds |= Camera::CMD_UP       ; true }
                     VirtualKeyCode::LShift => { cmds |= Camera::CMD_DOWN     ; true }
+                    VirtualKeyCode::E if *state == ElementState::Pressed => {
+                        self.mouse_rot = !self.mouse_rot;
+                        true
+                    }
                     _ => false
                 };
                 if *state == ElementState::Pressed {
@@ -141,8 +147,10 @@ impl CameraControl {
     }
 
     pub fn handle_mouse_move(&mut self, x: f64, y: f64) {
-        self.rot_right += x as f32;
-        self.rot_up -= y as f32;
+        if self.mouse_rot {
+            self.rot_right += x as f32;
+            self.rot_up -= y as f32;
+        }
     }
 
     pub fn update_camera(&mut self, camera: &mut Camera) {
