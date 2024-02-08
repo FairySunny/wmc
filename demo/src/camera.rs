@@ -34,10 +34,12 @@ impl Camera {
     pub const CMD_ROT_UP   : u32 = 1 << 8;
     pub const CMD_ROT_DOWN : u32 = 1 << 9;
 
-    pub fn handle_cmds(&mut self, cmds: u32, time_span: f32) {
+    pub fn handle_cmds(&mut self, cmds: u32, time_span: f32, rot_right: f32, rot_up: f32) {
         let mov = self.speed * time_span;
-        let rot = self.rot_speed * time_span;
+        let rot = self.rot_speed * 500.0 * time_span;
 
+        self.yaw += self.rot_speed * rot_right;
+        self.pitch += self.rot_speed * rot_up;
         if cmds & Self::CMD_ROT_RIGHT != 0 { self.yaw += rot; }
         if cmds & Self::CMD_ROT_LEFT  != 0 { self.yaw -= rot; }
         if cmds & Self::CMD_ROT_UP    != 0 { self.pitch += rot; }
@@ -87,12 +89,20 @@ impl CameraUniform {
 }
 
 pub struct CameraControl {
-    cmds: u32
+    cmds: u32,
+    updated_at: instant::Instant,
+    rot_right: f32,
+    rot_up: f32
 }
 
 impl CameraControl {
     pub fn new() -> Self {
-        Self { cmds: 0 }
+        Self {
+            cmds: 0,
+            updated_at: instant::Instant::now(),
+            rot_right: 0.0,
+            rot_up: 0.0
+        }
     }
 
     pub fn handle_events(&mut self, event: &WindowEvent) -> bool {
@@ -130,7 +140,17 @@ impl CameraControl {
         }
     }
 
-    pub fn update_camera(&self, camera: &mut Camera) {
-        camera.handle_cmds(self.cmds, 0.02);
+    pub fn handle_mouse_move(&mut self, x: f64, y: f64) {
+        self.rot_right += x as f32;
+        self.rot_up -= y as f32;
+    }
+
+    pub fn update_camera(&mut self, camera: &mut Camera) {
+        let now = instant::Instant::now();
+        let span = now - self.updated_at;
+        self.updated_at = now;
+        camera.handle_cmds(self.cmds, span.as_secs_f32(), self.rot_right, self.rot_up);
+        self.rot_right = 0.0;
+        self.rot_up = 0.0;
     }
 }

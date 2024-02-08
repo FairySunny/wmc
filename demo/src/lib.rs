@@ -4,9 +4,9 @@ mod camera;
 use std::collections::HashSet;
 use wgpu::util::DeviceExt;
 use winit::{
+    window::{Window, WindowBuilder},
     event_loop::{EventLoop, ControlFlow},
-    window::{WindowBuilder, Window},
-    event::{Event, WindowEvent, KeyboardInput, ElementState, VirtualKeyCode}
+    event::{Event, DeviceEvent, WindowEvent, KeyboardInput, ElementState, VirtualKeyCode}
 };
 
 pub struct SimpleChunk {
@@ -169,8 +169,8 @@ impl State {
             pos: (4.0, 3.0, 4.0).into(),
             yaw: cgmath::Deg(-135.0),
             pitch: cgmath::Deg(-15.0),
-            speed: 1.0,
-            rot_speed: cgmath::Deg(70.0),
+            speed: 5.0,
+            rot_speed: cgmath::Deg(0.2),
             fovy: cgmath::Deg(45.0).into(),
             aspect: config.width as f32 / config.height as f32,
             near: 0.1,
@@ -392,6 +392,10 @@ pub async fn run() {
     let mut state = State::new(window).await;
 
     event_loop.run(move |event, _, control_flow| match event {
+        Event::DeviceEvent {
+            event: DeviceEvent::MouseMotion { delta },
+            ..
+        } => state.camera_control.handle_mouse_move(delta.0, delta.1),
         Event::WindowEvent {
             window_id,
             event
