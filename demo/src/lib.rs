@@ -1,5 +1,6 @@
 mod texture;
 mod camera;
+mod gui;
 
 use std::collections::HashSet;
 use wgpu::util::DeviceExt;
@@ -97,7 +98,8 @@ struct State {
     camera_buffer: wgpu::Buffer,
     camera_control: camera::CameraControl,
     camera_bind_group: wgpu::BindGroup,
-    render_pipeline: wgpu::RenderPipeline
+    render_pipeline: wgpu::RenderPipeline,
+    egui_state: gui::EguiState
 }
 
 impl State {
@@ -260,6 +262,8 @@ impl State {
             multiview: None
         });
 
+        let egui_state = gui::EguiState::new(&window, &device, &config);
+
         Self {
             window,
             size,
@@ -276,7 +280,8 @@ impl State {
             camera_buffer,
             camera_bind_group,
             camera_control,
-            render_pipeline
+            render_pipeline,
+            egui_state
         }
     }
 
@@ -332,7 +337,7 @@ impl State {
             }
         }
 
-        self.camera_control.handle_events(event)
+        self.camera_control.handle_events(event) || self.egui_state.handle_events(event)
     }
 
     fn update(&mut self) {
@@ -377,7 +382,9 @@ impl State {
 
         drop(render_pass);
 
-        self.queue.submit(std::iter::once(encoder.finish()));
+        self.egui_state.render(&self.window, &self.device, &self.queue, &self.config, &mut encoder, &view);
+
+        self.queue.submit(Some(encoder.finish()));
         output.present();
 
         Ok(())

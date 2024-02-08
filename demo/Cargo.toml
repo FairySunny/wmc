@@ -15,4 +15,7 @@ bytemuck = { version = "1.12", features = ["derive"] }
 image = { version = "0.24", default-features = false, features = ["png"] }
 cgmath = "0.18"
 instant = "0.1"
+egui = "0.24"
+egui-winit = "0.24"
+egui-wgpu = "0.24"
 renderer = { path = "../renderer" }
