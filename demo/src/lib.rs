@@ -10,6 +10,9 @@ use winit::{
     event::{Event, DeviceEvent, WindowEvent, KeyboardInput, ElementState, VirtualKeyCode}
 };
 
+#[cfg(target_arch="wasm32")]
+use wasm_bindgen::prelude::*;
+
 pub struct SimpleChunk {
     data: Box<[u32; 100 * 16 * 16]>,
     updated: Vec<renderer::terrain::IntCoord>,
@@ -122,7 +125,11 @@ impl State {
 
         let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
             features: wgpu::Features::empty(),
-            limits: Default::default(),
+            limits: if cfg!(target_arch = "wasm32") {
+                wgpu::Limits::downlevel_webgl2_defaults()
+            } else {
+                Default::default()
+            },
             label: None
         }, None).await.unwrap();
 
@@ -397,10 +404,37 @@ impl State {
     }
 }
 
+#[cfg_attr(target_arch="wasm32", wasm_bindgen(start))]
 pub async fn run() {
-    env_logger::init();
+    cfg_if::cfg_if! {
+        if #[cfg(target_arch = "wasm32")] {
+            std::panic::set_hook(Box::new(console_error_panic_hook::hook));
+            console_log::init_with_level(log::Level::Warn).unwrap();
+        } else {
+            env_logger::init();
+        }
+    }
+
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
+
+    #[cfg(target_arch = "wasm32")]
+    {
+        use winit::platform::web::WindowExtWebSys;
+
+        window.set_inner_size(winit::dpi::PhysicalSize::new(800, 600));
+
+        web_sys::window()
+            .and_then(|win| win.document())
+            .and_then(|doc| doc.body())
+            .and_then(|body| {
+                let canvas = web_sys::Element::from(window.canvas());
+                canvas.set_attribute("autofocus", "").ok()?;
+                body.append_child(&canvas).ok()?;
+                Some(())
+            })
+            .unwrap();
+    }
 
     let mut state = State::new(window).await;
 
