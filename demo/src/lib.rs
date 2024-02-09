@@ -99,7 +99,8 @@ struct State {
     camera_control: camera::CameraControl,
     camera_bind_group: wgpu::BindGroup,
     render_pipeline: wgpu::RenderPipeline,
-    egui_state: gui::EguiState
+    screen_renderer: renderer::screen::ScreenRenderer,
+    gui_renderer: gui::GuiRenderer
 }
 
 impl State {
@@ -262,7 +263,9 @@ impl State {
             multiview: None
         });
 
-        let egui_state = gui::EguiState::new(&window, &device, &config);
+        let screen_renderer = renderer::screen::ScreenRenderer::new(&device, config.format);
+
+        let gui_renderer = gui::GuiRenderer::new(&window, &device, &config);
 
         Self {
             window,
@@ -281,7 +284,8 @@ impl State {
             camera_bind_group,
             camera_control,
             render_pipeline,
-            egui_state
+            screen_renderer,
+            gui_renderer
         }
     }
 
@@ -337,7 +341,7 @@ impl State {
             }
         }
 
-        self.camera_control.handle_events(event) || self.egui_state.handle_events(event)
+        self.camera_control.handle_events(event) || self.gui_renderer.handle_events(event)
     }
 
     fn update(&mut self) {
@@ -382,7 +386,9 @@ impl State {
 
         drop(render_pass);
 
-        self.egui_state.render(&self.window, &self.device, &self.queue, &self.config, &mut encoder, &view);
+        self.screen_renderer.render(&mut encoder, &view);
+
+        self.gui_renderer.render(&self.window, &self.device, &self.queue, &self.config, &mut encoder, &view);
 
         self.queue.submit(Some(encoder.finish()));
         output.present();

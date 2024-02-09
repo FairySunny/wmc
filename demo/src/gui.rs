@@ -1,10 +1,10 @@
-pub struct EguiState {
+pub struct GuiRenderer {
     context: egui::Context,
     state: egui_winit::State,
     renderer: egui_wgpu::Renderer
 }
 
-impl EguiState {
+impl GuiRenderer {
     pub fn new(window: &winit::window::Window, device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -> Self {
         let context = egui::Context::default();
 
