@@ -1,5 +1,5 @@
 mod texture;
-mod camera;
+mod control;
 mod gui;
 
 use std::collections::HashSet;
@@ -97,9 +97,9 @@ struct State {
     i: usize,
     scene: renderer::terrain::Scene,
     texture_bind_group: wgpu::BindGroup,
-    camera: camera::Camera,
+    camera: renderer::camera::Camera,
     camera_buffer: wgpu::Buffer,
-    camera_control: camera::CameraControl,
+    camera_control: control::CameraControl,
     camera_bind_group: wgpu::BindGroup,
     render_pipeline: wgpu::RenderPipeline,
     screen_renderer: renderer::screen::ScreenRenderer,
@@ -175,21 +175,17 @@ impl State {
             &texture_image.data
         );
 
-        let camera = camera::Camera {
-            pos: (4.0, 3.0, 4.0).into(),
+        let camera = renderer::camera::Camera {
+            pos: (5.0, 5.0, 5.0).into(),
             yaw: cgmath::Deg(-135.0),
-            pitch: cgmath::Deg(-15.0),
-            speed: 5.0,
-            rot_speed: cgmath::Deg(0.2),
-            fovy: cgmath::Deg(45.0).into(),
-            aspect: config.width as f32 / config.height as f32,
-            near: 0.1,
-            far: 100.0
+            pitch: cgmath::Deg(-45.0),
+            fovy: cgmath::Deg(45.0),
+            aspect: config.width as f32 / config.height as f32
         };
 
         let camera_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("[demo] Camera Buffer"),
-            contents: bytemuck::cast_slice(&[camera::CameraUniform::new(&camera)]),
+            contents: bytemuck::cast_slice(&[renderer::camera::CameraUniform::new(&camera)]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
         });
 
@@ -216,7 +212,7 @@ impl State {
             }]
         });
 
-        let camera_control = camera::CameraControl::new();
+        let camera_control = control::CameraControl::new();
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("../../renderer/src/shaders/terrain.wgsl"));
 
@@ -353,7 +349,7 @@ impl State {
 
     fn update(&mut self) {
         self.camera_control.update_camera(&mut self.camera);
-        self.queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[camera::CameraUniform::new(&self.camera)]));
+        self.queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[renderer::camera::CameraUniform::new(&self.camera)]));
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {

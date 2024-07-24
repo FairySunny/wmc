@@ -1367,6 +1367,7 @@ name = "renderer"
 version = "0.1.0"
 dependencies = [
  "bytemuck",
+ "cgmath",
  "env_logger",
  "log",
  "wgpu",
