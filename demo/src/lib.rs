@@ -102,7 +102,7 @@ struct State {
     camera_control: control::CameraControl,
     camera_bind_group: wgpu::BindGroup,
     render_pipeline: wgpu::RenderPipeline,
-    screen_renderer: renderer::screen::ScreenRenderer,
+    indicator_renderer: renderer::indicator::IndicatorRenderer,
     gui_renderer: gui::GuiRenderer
 }
 
@@ -266,7 +266,7 @@ impl State {
             multiview: None
         });
 
-        let screen_renderer = renderer::screen::ScreenRenderer::new(&device, config.format);
+        let indicator_renderer = renderer::indicator::IndicatorRenderer::new(&device, config.format);
 
         let gui_renderer = gui::GuiRenderer::new(&window, &device, &config);
 
@@ -287,7 +287,7 @@ impl State {
             camera_bind_group,
             camera_control,
             render_pipeline,
-            screen_renderer,
+            indicator_renderer,
             gui_renderer
         }
     }
@@ -365,7 +365,7 @@ impl State {
                 view: &view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                     store: wgpu::StoreOp::Store
                 }
             })],
@@ -389,7 +389,7 @@ impl State {
 
         drop(render_pass);
 
-        self.screen_renderer.render(&mut encoder, &view);
+        self.indicator_renderer.render(&mut encoder, &view);
 
         self.gui_renderer.render(&self.window, &self.device, &self.queue, &self.config, &mut encoder, &view);
 
@@ -412,7 +412,7 @@ pub async fn run() {
     }
 
     let event_loop = EventLoop::new();
-    let window = WindowBuilder::new().with_transparent(true).build(&event_loop).unwrap();
+    let window = WindowBuilder::new().build(&event_loop).unwrap();
 
     #[cfg(target_arch = "wasm32")]
     {

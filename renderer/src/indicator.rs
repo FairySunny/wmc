@@ -1,13 +1,13 @@
-pub struct ScreenRenderer {
+pub struct IndicatorRenderer {
     pipeline: wgpu::RenderPipeline
 }
 
-impl ScreenRenderer {
+impl IndicatorRenderer {
     pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat) -> Self {
-        let shader = device.create_shader_module(wgpu::include_wgsl!("shaders/screen.wgsl"));
+        let shader = device.create_shader_module(wgpu::include_wgsl!("shaders/indicator.wgsl"));
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("[screen] Render Pipeline"),
+            label: Some("[indicator] Render Pipeline"),
             layout: None,
             vertex: wgpu::VertexState {
                 module: &shader,
@@ -19,7 +19,14 @@ impl ScreenRenderer {
                 entry_point: "fs_main",
                 targets: &[Some(wgpu::ColorTargetState {
                     format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    blend: Some(wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::OneMinusDst,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrc,
+                            operation: wgpu::BlendOperation::Add
+                        },
+                        alpha: wgpu::BlendComponent::OVER
+                    }),
                     write_mask: wgpu::ColorWrites::ALL
                 })]
             }),
@@ -34,7 +41,7 @@ impl ScreenRenderer {
 
     pub fn render(&self, encoder: &mut wgpu::CommandEncoder, view: &wgpu::TextureView) {
         let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("[screen] Render Pass"),
+            label: Some("[indicator] Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view,
                 resolve_target: None,

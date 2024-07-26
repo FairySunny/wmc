@@ -33,7 +33,7 @@ fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
     let len2 = len1 / 10.0;
 
     if dists.x < len1 && dists.y < len2 || dists.y < len1 && dists.x < len2 {
-        return vec4(0.0, 0.0, 0.0, 1.0);
+        return vec4(1.0, 1.0, 1.0, 0.0);
     }
 
     return vec4(0.0);
