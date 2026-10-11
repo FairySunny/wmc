@@ -1,14 +1,16 @@
-[package]
-name = "wmc"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [workspace]
 members = [
     "renderer",
     "demo"
 ]
 
-[dependencies]
+[workspace.dependencies]
+wgpu = "0.18"
+bytemuck = { version = "1.12", features = ["derive"] }
+cgmath = "0.18"
+log = "0.4"
+
+[package]
+name = "wmc"
+version = "0.1.0"
+edition = "2021"
