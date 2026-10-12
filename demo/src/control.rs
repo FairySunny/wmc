@@ -1,5 +1,3 @@
-use winit::event::{WindowEvent, KeyboardInput, VirtualKeyCode, ElementState};
-
 pub struct CameraControl {
     cmds: u32,
     updated_at: instant::Instant,
@@ -32,43 +30,28 @@ impl CameraControl {
         }
     }
 
-    pub fn handle_events(&mut self, event: &WindowEvent) -> bool {
-        match event {
-            WindowEvent::KeyboardInput {
-                input: KeyboardInput {
-                    state,
-                    virtual_keycode: Some(keycode),
-                    ..
-                },
-                ..
-            } => {
-                let mut cmds = 0u32;
-                let ok = match keycode {
-                    VirtualKeyCode::Right  => { cmds |= Self::CMD_ROT_RIGHT; true }
-                    VirtualKeyCode::Left   => { cmds |= Self::CMD_ROT_LEFT ; true }
-                    VirtualKeyCode::Up     => { cmds |= Self::CMD_ROT_UP   ; true }
-                    VirtualKeyCode::Down   => { cmds |= Self::CMD_ROT_DOWN ; true }
-                    VirtualKeyCode::W      => { cmds |= Self::CMD_FRONT    ; true }
-                    VirtualKeyCode::S      => { cmds |= Self::CMD_BACK     ; true }
-                    VirtualKeyCode::D      => { cmds |= Self::CMD_RIGHT    ; true }
-                    VirtualKeyCode::A      => { cmds |= Self::CMD_LEFT     ; true }
-                    VirtualKeyCode::Space  => { cmds |= Self::CMD_UP       ; true }
-                    VirtualKeyCode::LShift => { cmds |= Self::CMD_DOWN     ; true }
-                    VirtualKeyCode::E if *state == ElementState::Pressed => {
-                        self.mouse_rot = !self.mouse_rot;
-                        true
-                    }
-                    _ => false
-                };
-                if *state == ElementState::Pressed {
-                    self.cmds |= cmds;
-                } else {
-                    self.cmds &= !cmds;
-                }
-                ok
-            },
-            _ => false
+    pub fn handle_key(&mut self, down: bool, code: winit::event::VirtualKeyCode) -> bool {
+        let mut cmds = 0u32;
+        match code {
+            winit::event::VirtualKeyCode::Right  => { cmds |= Self::CMD_ROT_RIGHT }
+            winit::event::VirtualKeyCode::Left   => { cmds |= Self::CMD_ROT_LEFT  }
+            winit::event::VirtualKeyCode::Up     => { cmds |= Self::CMD_ROT_UP    }
+            winit::event::VirtualKeyCode::Down   => { cmds |= Self::CMD_ROT_DOWN  }
+            winit::event::VirtualKeyCode::W      => { cmds |= Self::CMD_FRONT     }
+            winit::event::VirtualKeyCode::S      => { cmds |= Self::CMD_BACK      }
+            winit::event::VirtualKeyCode::D      => { cmds |= Self::CMD_RIGHT     }
+            winit::event::VirtualKeyCode::A      => { cmds |= Self::CMD_LEFT      }
+            winit::event::VirtualKeyCode::Space  => { cmds |= Self::CMD_UP        }
+            winit::event::VirtualKeyCode::LShift => { cmds |= Self::CMD_DOWN      }
+            winit::event::VirtualKeyCode::E if down => { self.mouse_rot = !self.mouse_rot }
+            _ => return false
+        };
+        if down {
+            self.cmds |= cmds;
+        } else {
+            self.cmds &= !cmds;
         }
+        return true;
     }
 
     pub fn handle_mouse_move(&mut self, x: f64, y: f64) {

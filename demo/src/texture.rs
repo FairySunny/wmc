@@ -1,5 +1,3 @@
-use image::GenericImageView;
-
 pub struct Image {
     pub width: u32,
     pub height: u32,
@@ -10,7 +8,7 @@ impl Image {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, image::ImageError> {
         let img = image::load_from_memory(bytes)?;
         let rgba = img.to_rgba8();
-        let dimensions = img.dimensions();
+        let dimensions = image::GenericImageView::dimensions(&img);
         Ok(Self {
             width: dimensions.0,
             height: dimensions.1,
