@@ -219,13 +219,13 @@ impl ApplicationHandler<State> for App {
     }
 
     #[allow(unused_mut)]
-    fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut event: State) {
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut state: State) {
         #[cfg(target_arch = "wasm32")]
         {
-            event.window.request_redraw();
-            event.resize(event.window.inner_size().width, event.window.inner_size().height);
+            state.window.request_redraw();
+            state.resize(state.window.inner_size());
         }
-        self.state = Some(event);
+        self.state = Some(state);
     }
 
     fn window_event(
@@ -250,6 +250,7 @@ impl ApplicationHandler<State> for App {
             _ => {
                 if state.input(&event) { return; }
 
+                #[cfg(not(target_arch = "wasm32"))]
                 if let WindowEvent::KeyboardInput {
                     event: KeyEvent {
                         physical_key: PhysicalKey::Code(KeyCode::Escape),

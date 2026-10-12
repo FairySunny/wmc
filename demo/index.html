@@ -14,12 +14,17 @@
         justify-content: center;
         align-items: center;
       }
+      canvas {
+        width: 800px;
+        height: 600px;
+      }
     </style>
   </head>
   <body>
+    <canvas id="canvas"></canvas>
     <script type="module">
       import init from './pkg/demo.js'
-      init().then(() => console.log('WASM loaded'))
+      init()
     </script>
   </body>
 </html>

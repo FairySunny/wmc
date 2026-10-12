@@ -23,8 +23,8 @@ pub fn create_depth_texture(device: &wgpu::Device, config: &wgpu::SurfaceConfigu
     let texture = device.create_texture(&wgpu::TextureDescriptor {
         label: Some(label),
         size: wgpu::Extent3d {
-            width: config.width,
-            height: config.height,
+            width: config.width.max(1),
+            height: config.height.max(1),
             depth_or_array_layers: 1
         },
         mip_level_count: 1,
