@@ -11,12 +11,14 @@ impl IndicatorRenderer {
             layout: None,
             vertex: wgpu::VertexState {
                 module: &shader,
-                entry_point: "vs_main",
+                entry_point: Some("vs_main"),
+                compilation_options: Default::default(),
                 buffers: &[]
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
+                compilation_options: Default::default(),
                 targets: &[Some(wgpu::ColorTargetState {
                     format,
                     blend: Some(wgpu::BlendState {
@@ -33,7 +35,8 @@ impl IndicatorRenderer {
             primitive: Default::default(),
             depth_stencil: None,
             multisample: Default::default(),
-            multiview: None
+            multiview_mask: None,
+            cache: None
         });
 
         Self { pipeline }
@@ -44,6 +47,7 @@ impl IndicatorRenderer {
             label: Some("[indicator] Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view,
+                depth_slice: None,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Load,
@@ -52,7 +56,8 @@ impl IndicatorRenderer {
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
-            occlusion_query_set: None
+            occlusion_query_set: None,
+            multiview_mask: None
         });
 
         rpass.set_pipeline(&self.pipeline);

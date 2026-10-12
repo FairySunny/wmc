@@ -9,7 +9,7 @@ version = "0.1.0"
 edition = "2024"
 
 [workspace.dependencies]
-wgpu = "0.18"
+wgpu = "30.0"
 bytemuck = { version = "1.12", features = ["derive"] }
 cgmath = "0.18"
 log = "0.4"

@@ -30,20 +30,20 @@ impl CameraControl {
         }
     }
 
-    pub fn handle_key(&mut self, down: bool, code: winit::event::VirtualKeyCode) -> bool {
+    pub fn handle_key(&mut self, down: bool, code: winit::keyboard::KeyCode) -> bool {
         let mut cmds = 0u32;
         match code {
-            winit::event::VirtualKeyCode::Right  => { cmds |= Self::CMD_ROT_RIGHT }
-            winit::event::VirtualKeyCode::Left   => { cmds |= Self::CMD_ROT_LEFT  }
-            winit::event::VirtualKeyCode::Up     => { cmds |= Self::CMD_ROT_UP    }
-            winit::event::VirtualKeyCode::Down   => { cmds |= Self::CMD_ROT_DOWN  }
-            winit::event::VirtualKeyCode::W      => { cmds |= Self::CMD_FRONT     }
-            winit::event::VirtualKeyCode::S      => { cmds |= Self::CMD_BACK      }
-            winit::event::VirtualKeyCode::D      => { cmds |= Self::CMD_RIGHT     }
-            winit::event::VirtualKeyCode::A      => { cmds |= Self::CMD_LEFT      }
-            winit::event::VirtualKeyCode::Space  => { cmds |= Self::CMD_UP        }
-            winit::event::VirtualKeyCode::LShift => { cmds |= Self::CMD_DOWN      }
-            winit::event::VirtualKeyCode::E if down => { self.mouse_rot = !self.mouse_rot }
+            winit::keyboard::KeyCode::ArrowRight => { cmds |= Self::CMD_ROT_RIGHT }
+            winit::keyboard::KeyCode::ArrowLeft  => { cmds |= Self::CMD_ROT_LEFT  }
+            winit::keyboard::KeyCode::ArrowUp    => { cmds |= Self::CMD_ROT_UP    }
+            winit::keyboard::KeyCode::ArrowDown  => { cmds |= Self::CMD_ROT_DOWN  }
+            winit::keyboard::KeyCode::KeyW       => { cmds |= Self::CMD_FRONT     }
+            winit::keyboard::KeyCode::KeyS       => { cmds |= Self::CMD_BACK      }
+            winit::keyboard::KeyCode::KeyD       => { cmds |= Self::CMD_RIGHT     }
+            winit::keyboard::KeyCode::KeyA       => { cmds |= Self::CMD_LEFT      }
+            winit::keyboard::KeyCode::Space      => { cmds |= Self::CMD_UP        }
+            winit::keyboard::KeyCode::ShiftLeft  => { cmds |= Self::CMD_DOWN      }
+            winit::keyboard::KeyCode::KeyE if down => { self.mouse_rot = !self.mouse_rot }
             _ => return false
         };
         if down {

@@ -98,11 +98,11 @@ impl Model {
         }
     }
 
-    pub fn handle_key(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, down: bool, code: winit::event::VirtualKeyCode) -> bool {
+    pub fn handle_key(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, down: bool, code: winit::keyboard::KeyCode) -> bool {
         if !down { return false };
 
         match code {
-            winit::event::VirtualKeyCode::Key1 => {
+            winit::keyboard::KeyCode::Digit1 => {
                 if self.i > 10 { return true; }
                 let i = self.i as u32;
                 self.chunk.update(&[
@@ -114,7 +114,7 @@ impl Model {
                 self.scene.update(device, queue, &self.chunk);
                 self.i += 1;
             }
-            winit::event::VirtualKeyCode::Key2 => {
+            winit::keyboard::KeyCode::Digit2 => {
                 if self.i <= 2 { return true; }
                 self.i -= 1;
                 self.chunk.update(&[

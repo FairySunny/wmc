@@ -49,18 +49,21 @@ pub fn generate_mipmaps(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wg
         layout: None,
         vertex: wgpu::VertexState {
             module: &shader,
-            entry_point: "vs_main",
+            entry_point: Some("vs_main"),
+            compilation_options: Default::default(),
             buffers: &[]
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
+            compilation_options: Default::default(),
             targets: &[Some(texture.format().into())]
         }),
         primitive: Default::default(),
         depth_stencil: None,
         multisample: Default::default(),
-        multiview: None
+        multiview_mask: None,
+        cache: None
     });
 
     let bind_group_layout = pipeline.get_bind_group_layout(0);
@@ -72,7 +75,7 @@ pub fn generate_mipmaps(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wg
         address_mode_w: wgpu::AddressMode::ClampToEdge,
         mag_filter: wgpu::FilterMode::Linear,
         min_filter: wgpu::FilterMode::Linear,
-        mipmap_filter: wgpu::FilterMode::Nearest,
+        mipmap_filter: wgpu::MipmapFilterMode::Nearest,
         ..Default::default()
     });
 
@@ -80,6 +83,7 @@ pub fn generate_mipmaps(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wg
         label: Some(&format!("[mipmap] View Level {level}")),
         format: None,
         dimension: None,
+        usage: None,
         aspect: wgpu::TextureAspect::All,
         base_mip_level: level,
         mip_level_count: Some(1),
@@ -111,6 +115,7 @@ pub fn generate_mipmaps(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wg
             label: Some(&format!("[mipmap] Render Pass Level {level}")),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &views[level],
+                depth_slice: None,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
@@ -119,7 +124,8 @@ pub fn generate_mipmaps(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wg
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
-            occlusion_query_set: None
+            occlusion_query_set: None,
+            multiview_mask: None
         });
 
         render_pass.set_pipeline(&pipeline);

@@ -73,10 +73,10 @@ impl Scene {
         let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("[demo] Render Pipeline Layout"),
             bind_group_layouts: &[
-                &texture_bind_group_layout,
-                &camera_bind_group_layout
+                Some(&texture_bind_group_layout),
+                Some(&camera_bind_group_layout)
             ],
-            push_constant_ranges: &[]
+            immediate_size: 0
         });
 
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -84,12 +84,14 @@ impl Scene {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
-                entry_point: "vs_main",
-                buffers: &[renderer::terrain::Scene::buffer_layout::<0>()]
+                entry_point: Some("vs_main"),
+                compilation_options: Default::default(),
+                buffers: &[Some(renderer::terrain::Scene::buffer_layout::<0>())]
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
+                compilation_options: Default::default(),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: config.format,
                     blend: Some(wgpu::BlendState::REPLACE),
@@ -107,8 +109,8 @@ impl Scene {
             },
             depth_stencil: Some(wgpu::DepthStencilState {
                 format: crate::texture::DEPTH_FORMAT,
-                depth_write_enabled: true,
-                depth_compare: wgpu::CompareFunction::Less,
+                depth_write_enabled: Some(true),
+                depth_compare: Some(wgpu::CompareFunction::Less),
                 stencil: Default::default(),
                 bias: Default::default()
             }),
@@ -117,7 +119,8 @@ impl Scene {
                 mask: !0,
                 alpha_to_coverage_enabled: false
             },
-            multiview: None
+            multiview_mask: None,
+            cache: None
         });
 
         Self {
@@ -138,7 +141,7 @@ impl Scene {
         self.camera.aspect = width as f32 / height as f32;
     }
 
-    pub fn handle_key(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, down: bool, code: winit::event::VirtualKeyCode) -> bool {
+    pub fn handle_key(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, down: bool, code: winit::keyboard::KeyCode) -> bool {
         if self.camera_control.handle_key(down, code) { return true; }
 
         if self.model.handle_key(device, queue, down, code) { return true; }
@@ -158,6 +161,7 @@ impl Scene {
             label: Some("[demo] Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &view,
+                depth_slice: None,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
@@ -173,7 +177,8 @@ impl Scene {
                 stencil_ops: None
             }),
             occlusion_query_set: None,
-            timestamp_writes: None
+            timestamp_writes: None,
+            multiview_mask: None
         });
 
         render_pass.set_pipeline(&self.render_pipeline);
