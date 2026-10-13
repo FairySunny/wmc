@@ -258,8 +258,7 @@ impl ApplicationHandler<State> for App {
             _ => {
                 if state.input(&event) { return; }
 
-                #[cfg(not(target_arch = "wasm32"))]
-                if let WindowEvent::KeyboardInput {
+                if cfg!(not(target_arch = "wasm32")) && let WindowEvent::KeyboardInput {
                     event: KeyEvent {
                         physical_key: PhysicalKey::Code(KeyCode::Escape),
                         state: ElementState::Pressed,

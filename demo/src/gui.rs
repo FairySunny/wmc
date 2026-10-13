@@ -6,7 +6,7 @@ pub struct GuiRenderer {
 }
 
 impl GuiRenderer {
-    pub fn new(window: &winit::window::Window, device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -> Self {
+    pub fn new(#[allow(unused)] window: &winit::window::Window, device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -> Self {
         let context = egui::Context::default();
 
         let renderer = egui_wgpu::Renderer::new(
@@ -33,7 +33,7 @@ impl GuiRenderer {
         }
     }
 
-    pub fn handle_events(&mut self, window: &winit::window::Window, event: &winit::event::WindowEvent) -> bool {
+    pub fn handle_events(&mut self, #[allow(unused)] window: &winit::window::Window, #[allow(unused)] event: &winit::event::WindowEvent) -> bool {
         #[cfg(not(target_arch = "wasm32"))]
         { self.state.on_window_event(window, event).consumed }
 
@@ -41,7 +41,7 @@ impl GuiRenderer {
         false
     }
 
-    pub fn render(&mut self, window: &winit::window::Window, device: &wgpu::Device, queue: &wgpu::Queue, config: &wgpu::SurfaceConfiguration, encoder: &mut wgpu::CommandEncoder, view: &wgpu::TextureView) {
+    pub fn render(&mut self, #[allow(unused)] window: &winit::window::Window, device: &wgpu::Device, queue: &wgpu::Queue, config: &wgpu::SurfaceConfiguration, encoder: &mut wgpu::CommandEncoder, view: &wgpu::TextureView) {
         let screen_descriptor = egui_wgpu::ScreenDescriptor {
             size_in_pixels: [config.width, config.height],
             pixels_per_point: self.context.pixels_per_point()
