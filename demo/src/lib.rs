@@ -67,6 +67,14 @@ impl State {
             .find(|f| f.is_srgb())
             .copied()
             .unwrap_or(surface_caps.formats[0]);
+        let surface_alpha_mode = surface_caps.alpha_modes.iter()
+            .find(|m| match m {
+                wgpu::CompositeAlphaMode::PreMultiplied
+                | wgpu::CompositeAlphaMode::PostMultiplied => true,
+                _ => false
+            })
+            .copied()
+            .unwrap_or(wgpu::CompositeAlphaMode::Auto);
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface_format,
@@ -75,7 +83,7 @@ impl State {
             height: size.height,
             present_mode: surface_caps.present_modes[0],
             desired_maximum_frame_latency: 2,
-            alpha_mode: surface_caps.alpha_modes[0],
+            alpha_mode: surface_alpha_mode,
             view_formats: vec![]
         };
 
@@ -187,7 +195,7 @@ impl App {
 impl ApplicationHandler<State> for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         #[allow(unused_mut)]
-        let mut window_attributes = Window::default_attributes();
+        let mut window_attributes = Window::default_attributes().with_transparent(true);
 
         #[cfg(target_arch = "wasm32")]
         {
