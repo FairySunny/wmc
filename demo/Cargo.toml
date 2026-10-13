@@ -16,10 +16,12 @@ instant = "0.1"
 image = { version = "0.24", default-features = false, features = ["png"] }
 log.workspace = true
 env_logger = "0.10"
-# egui = "0.24"
-# egui-winit = { version = "0.24", default-features = false }
-# egui-wgpu = "0.24"
+egui = "0.36"
+egui-wgpu = "0.36"
 renderer = { path = "../renderer" }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+egui-winit = { version = "0.36", default-features = false }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen = "0.2"

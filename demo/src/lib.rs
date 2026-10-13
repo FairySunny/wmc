@@ -2,7 +2,7 @@ mod texture;
 mod model;
 mod control;
 mod scene;
-// mod gui;
+mod gui;
 
 use std::sync::Arc;
 
@@ -22,7 +22,7 @@ struct State {
     is_surface_configured: bool,
     scene: scene::Scene,
     indicator_renderer: renderer::indicator::IndicatorRenderer,
-    // gui_renderer: gui::GuiRenderer
+    gui_renderer: gui::GuiRenderer
 }
 
 impl State {
@@ -83,7 +83,7 @@ impl State {
 
         let indicator_renderer = renderer::indicator::IndicatorRenderer::new(&device, config.format);
 
-        // let gui_renderer = gui::GuiRenderer::new(&window, &device, &config);
+        let gui_renderer = gui::GuiRenderer::new(&window, &device, &config);
 
         Self {
             window,
@@ -94,7 +94,7 @@ impl State {
             is_surface_configured: false,
             scene,
             indicator_renderer,
-            // gui_renderer
+            gui_renderer
         }
     }
 
@@ -124,7 +124,7 @@ impl State {
             _ => {}
         }
 
-        false // self.gui_renderer.handle_events(event)
+        self.gui_renderer.handle_events(&self.window, event)
     }
 
     fn render(&mut self) -> Result<(), ()> {
@@ -157,7 +157,7 @@ impl State {
 
         self.indicator_renderer.render(&mut encoder, &view);
 
-        // self.gui_renderer.render(&self.window, &self.device, &self.queue, &self.config, &mut encoder, &view);
+        self.gui_renderer.render(&self.window, &self.device, &self.queue, &self.config, &mut encoder, &view);
 
         self.queue.submit(std::iter::once(encoder.finish()));
         self.queue.present(output);
