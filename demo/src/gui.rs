@@ -41,7 +41,7 @@ impl GuiRenderer {
         false
     }
 
-    pub fn render(&mut self, #[allow(unused)] window: &winit::window::Window, device: &wgpu::Device, queue: &wgpu::Queue, config: &wgpu::SurfaceConfiguration, encoder: &mut wgpu::CommandEncoder, view: &wgpu::TextureView) {
+    pub fn render(&mut self, #[allow(unused)] window: &winit::window::Window, device: &wgpu::Device, queue: &wgpu::Queue, config: &wgpu::SurfaceConfiguration, encoder: &mut wgpu::CommandEncoder, view: &wgpu::TextureView, scene: &crate::scene::Scene) {
         let screen_descriptor = egui_wgpu::ScreenDescriptor {
             size_in_pixels: [config.width, config.height],
             pixels_per_point: self.context.pixels_per_point()
@@ -54,8 +54,8 @@ impl GuiRenderer {
         let raw_input = Default::default();
 
         let mut full_output = self.context.run_ui(raw_input, |ctx| {
-            egui::Panel::left("My Panel").show(ctx, |ui| {
-                ui.label("Hello egui!");
+            egui::Panel::left("My Panel").exact_size(150.0).show(ctx, |ui| {
+                ui.label(format!("Target: {:?}", scene.debug_target));
             });
         });
 

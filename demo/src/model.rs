@@ -138,4 +138,48 @@ impl Model {
     pub fn len(&self) -> usize {
         self.scene.len()
     }
+
+    pub fn intersect(&self, from: &[f32; 3], to: &[f32; 3]) -> Option<[i32; 3]> {
+        if from.iter().any(|x| !x.is_finite()) || from == to {
+            return None;
+        }
+
+        let mut pos = from.map(|x| x.floor() as i32);
+
+        if pos.iter().all(|&x| x >= 0) && pos[0] < 16 && pos[1] < 100 && pos[2] < 16
+            && self.chunk.get(&pos.map(|x| x as usize)) > 0 {
+            return Some(pos);
+        }
+
+        let d = [to[0] - from[0], to[1] - from[1], to[2] - from[2]];
+        if d.iter().any(|x| !x.is_finite()) {
+            return None;
+        }
+
+        let sign = d.map(|x| x.signum());
+        let sign_i = sign.map(|x| x as i32);
+        let t_delta = [sign[0] / d[0], sign[1] / d[1], sign[2] / d[2]].map(|x| x.min(f32::MAX));
+
+        let mut t = [
+            t_delta[0] * ((sign[0] + 1.0) / 2.0 - sign[0] * (from[0] - from[0].floor())),
+            t_delta[1] * ((sign[1] + 1.0) / 2.0 - sign[1] * (from[1] - from[1].floor())),
+            t_delta[2] * ((sign[2] + 1.0) / 2.0 - sign[2] * (from[2] - from[2].floor()))
+        ];
+
+        while t.iter().any(|&x| x <= 1.0) {
+            let ((t_n, t_delta_n), (pos_n, sign_i_n)) = t.iter_mut().zip(t_delta)
+                .zip(pos.iter_mut().zip(sign_i))
+                .min_by(|((t1, _), _), ((t2, _), _)| t1.total_cmp(t2))
+                .unwrap();
+            *t_n += t_delta_n;
+            *pos_n += sign_i_n;
+
+            if pos.iter().all(|&x| x >= 0) && pos[0] < 16 && pos[1] < 100 && pos[2] < 16
+                && self.chunk.get(&pos.map(|x| x as usize)) > 0 {
+                return Some(pos);
+            }
+        }
+
+        None
+    }
 }

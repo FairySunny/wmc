@@ -6,7 +6,8 @@ pub struct Scene {
     camera_buffer: wgpu::Buffer,
     camera_control: crate::control::CameraControl,
     camera_bind_group: wgpu::BindGroup,
-    render_pipeline: wgpu::RenderPipeline
+    render_pipeline: wgpu::RenderPipeline,
+    pub debug_target: Option<[i32; 3]>
 }
 
 impl Scene {
@@ -131,7 +132,8 @@ impl Scene {
             camera_buffer,
             camera_control,
             camera_bind_group,
-            render_pipeline
+            render_pipeline,
+            debug_target: None
         }
     }
 
@@ -153,9 +155,16 @@ impl Scene {
         self.camera_control.handle_mouse_move(x, y);
     }
 
+    pub fn update(&mut self, queue: &wgpu::Queue) {
+        self.camera_control.update_camera(&mut self.camera);
+        queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[renderer::camera::CameraUniform::new(&self.camera)]));
+    }
+
     pub fn render(&mut self, queue: &wgpu::Queue, encoder: &mut wgpu::CommandEncoder, view: &wgpu::TextureView) {
         self.camera_control.update_camera(&mut self.camera);
         queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[renderer::camera::CameraUniform::new(&self.camera)]));
+
+        self.debug_target = self.model.intersect(self.camera.pos.as_ref(), (self.camera.pos + self.camera.get_facing() * 10.0).as_ref());
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("[demo] Render Pass"),

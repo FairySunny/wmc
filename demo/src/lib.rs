@@ -135,6 +135,10 @@ impl State {
         self.gui_renderer.handle_events(&self.window, event)
     }
 
+    fn update(&mut self) {
+        self.scene.update(&self.queue);
+    }
+
     fn render(&mut self) -> Result<(), ()> {
         self.window.request_redraw();
 
@@ -165,7 +169,7 @@ impl State {
 
         self.indicator_renderer.render(&mut encoder, &view);
 
-        self.gui_renderer.render(&self.window, &self.device, &self.queue, &self.config, &mut encoder, &view);
+        self.gui_renderer.render(&self.window, &self.device, &self.queue, &self.config, &mut encoder, &view, &self.scene);
 
         self.queue.submit(std::iter::once(encoder.finish()));
         self.queue.present(output);
@@ -251,9 +255,11 @@ impl ApplicationHandler<State> for App {
         match event {
             WindowEvent::Resized(size) => state.resize(size),
             WindowEvent::CloseRequested => event_loop.exit(),
-            WindowEvent::RedrawRequested => match state.render() {
-                Ok(_) => {}
-                Err(_) => event_loop.exit()
+            WindowEvent::RedrawRequested => {
+                state.update();
+                if state.render().is_err() {
+                    event_loop.exit();
+                }
             },
             _ => {
                 if state.input(&event) { return; }

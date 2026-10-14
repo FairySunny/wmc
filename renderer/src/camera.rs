@@ -14,16 +14,19 @@ impl Camera {
         0.0, 0.0, 0.5, 1.0,
     );
 
-    pub fn get_view_proj_mat(&self) -> cgmath::Matrix4<f32> {
-        use cgmath::Angle;
+    pub fn get_facing(&self) -> cgmath::Vector3<f32> {
+        let (sin_yaw, cos_yaw) = cgmath::Angle::sin_cos(self.yaw);
+        let (sin_pitch, cos_pitch) = cgmath::Angle::sin_cos(self.pitch);
 
-        let (sin_yaw, cos_yaw) = self.yaw.sin_cos();
-        let (sin_pitch, cos_pitch) = self.pitch.sin_cos();
-        let facing = cgmath::Vector3::new(
+        cgmath::vec3(
             cos_yaw * cos_pitch,
             sin_pitch,
             sin_yaw * cos_pitch
-        );
+        )
+    }
+
+    pub fn get_view_proj_mat(&self) -> cgmath::Matrix4<f32> {
+        let facing = self.get_facing();
 
         let view_mat = cgmath::Matrix4::look_to_rh(self.pos, facing, cgmath::Vector3::unit_y());
 
