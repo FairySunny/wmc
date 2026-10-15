@@ -4,7 +4,12 @@ pub struct DynamicBuffer {
 }
 
 impl DynamicBuffer {
-    pub fn new(device: &wgpu::Device, label: String, initial_size: wgpu::BufferAddress, usage: wgpu::BufferUsages) -> Self {
+    pub fn new(
+        device: &wgpu::Device,
+        label: String,
+        initial_size: wgpu::BufferAddress,
+        usage: wgpu::BufferUsages
+    ) -> Self {
         let buffer = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some(&label),
             size: initial_size,
@@ -47,8 +52,11 @@ pub fn generate_mipmaps(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wg
     let shader = device.create_shader_module(wgpu::include_wgsl!("shaders/mipmap.wgsl"));
 
     let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-        label: Some("[mipmap] Render Pipeline"),
+        label: Some("Mipmap"),
         layout: None,
+        primitive: Default::default(),
+        depth_stencil: None,
+        multisample: Default::default(),
         vertex: wgpu::VertexState {
             module: &shader,
             entry_point: Some("vs_main"),
@@ -61,46 +69,32 @@ pub fn generate_mipmaps(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wg
             compilation_options: Default::default(),
             targets: &[Some(texture.format().into())]
         }),
-        primitive: Default::default(),
-        depth_stencil: None,
-        multisample: Default::default(),
         multiview_mask: None,
         cache: None
     });
 
-    let bind_group_layout = pipeline.get_bind_group_layout(0);
+    let views: Vec<_> = (0..mip_cnt).map(|level| texture.create_view(&wgpu::TextureViewDescriptor {
+        label: Some(&format!("Mipmap (Level {level})")),
+        base_mip_level: level,
+        mip_level_count: Some(1),
+        ..Default::default()
+    })).collect();
 
     let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-        label: Some("[mipmap] Sampler"),
-        address_mode_u: wgpu::AddressMode::ClampToEdge,
-        address_mode_v: wgpu::AddressMode::ClampToEdge,
-        address_mode_w: wgpu::AddressMode::ClampToEdge,
+        label: Some("Mipmap"),
         mag_filter: wgpu::FilterMode::Linear,
         min_filter: wgpu::FilterMode::Linear,
-        mipmap_filter: wgpu::MipmapFilterMode::Nearest,
         ..Default::default()
     });
 
-    let views: Vec<_> = (0..mip_cnt).map(|level| texture.create_view(&wgpu::TextureViewDescriptor {
-        label: Some(&format!("[mipmap] View Level {level}")),
-        format: None,
-        dimension: None,
-        usage: None,
-        aspect: wgpu::TextureAspect::All,
-        base_mip_level: level,
-        mip_level_count: Some(1),
-        base_array_layer: 0,
-        array_layer_count: None
-    })).collect();
-
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
-        label: Some("[mipmap] Render Encoder")
+        label: Some("Mipmap")
     });
 
     for level in 1..mip_cnt as usize {
         let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some(&format!("[mipmap] Texture Bind Group Level {level}")),
-            layout: &bind_group_layout,
+            label: Some(&format!("Mipmap (Level {level})")),
+            layout: &pipeline.get_bind_group_layout(0),
             entries: &[
                 wgpu::BindGroupEntry {
                     binding: 0,
@@ -114,13 +108,13 @@ pub fn generate_mipmaps(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wg
         });
 
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some(&format!("[mipmap] Render Pass Level {level}")),
+            label: Some(&format!("Mipmap (Level {level})")),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &views[level],
                 depth_slice: None,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                    load: wgpu::LoadOp::Load,
                     store: wgpu::StoreOp::Store
                 }
             })],
@@ -135,5 +129,5 @@ pub fn generate_mipmaps(device: &wgpu::Device, queue: &wgpu::Queue, texture: &wg
         render_pass.draw(0..3, 0..1);
     }
 
-    queue.submit(Some(encoder.finish()));
+    queue.submit([encoder.finish()]);
 }

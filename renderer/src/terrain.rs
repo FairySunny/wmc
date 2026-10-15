@@ -45,14 +45,14 @@ pub trait TerrainUpdate {
 
 pub struct Terrain {
     faces: Vec<Face>,
-    buffer: crate::utils::DynamicBuffer
+    buffer: crate::util::DynamicBuffer
 }
 
 impl Terrain {
     pub fn new(device: &wgpu::Device) -> Self {
         Self {
             faces: vec![],
-            buffer: crate::utils::DynamicBuffer::new(
+            buffer: crate::util::DynamicBuffer::new(
                 device,
                 "Terrain (Instance)".into(),
                 512,
@@ -159,7 +159,14 @@ impl Terrain {
         })
     }
 
-    pub fn create_texture(device: &wgpu::Device, queue: &wgpu::Queue, layout: &wgpu::BindGroupLayout, width: u32, height: u32, data: &[u8]) -> wgpu::BindGroup {
+    pub fn create_texture(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        layout: &wgpu::BindGroupLayout,
+        width: u32,
+        height: u32,
+        data: &[u8]
+    ) -> wgpu::BindGroup {
         let size = wgpu::Extent3d {
             width,
             height,
@@ -195,7 +202,7 @@ impl Terrain {
             size
         );
 
-        crate::utils::generate_mipmaps(device, queue, &texture);
+        crate::util::generate_mipmaps(device, queue, &texture);
 
         let view = texture.create_view(&wgpu::TextureViewDescriptor {
             label: Some("Terrain (Texture)"),
