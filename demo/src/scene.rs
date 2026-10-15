@@ -7,6 +7,7 @@ pub struct Scene {
     camera_control: crate::control::CameraControl,
     camera_bind_group: wgpu::BindGroup,
     render_pipeline: wgpu::RenderPipeline,
+    block_outline: crate::block_outline::BlockOutline,
     pub debug_target: Option<[i32; 3]>
 }
 
@@ -124,6 +125,8 @@ impl Scene {
             cache: None
         });
 
+        let block_outline = crate::block_outline::BlockOutline::new(device, config, &camera_bind_group_layout);
+
         Self {
             depth_texture_view,
             model,
@@ -133,6 +136,7 @@ impl Scene {
             camera_control,
             camera_bind_group,
             render_pipeline,
+            block_outline,
             debug_target: None
         }
     }
@@ -158,14 +162,14 @@ impl Scene {
     pub fn update(&mut self, queue: &wgpu::Queue) {
         self.camera_control.update_camera(&mut self.camera);
         queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[renderer::camera::CameraUniform::new(&self.camera)]));
+
+        let block_outline_position = self.model.intersect(self.camera.pos.as_ref(), (self.camera.pos + self.camera.get_facing() * 10.0).as_ref());
+        self.debug_target = block_outline_position;
+
+        self.block_outline.update(queue, block_outline_position);
     }
 
-    pub fn render(&mut self, queue: &wgpu::Queue, encoder: &mut wgpu::CommandEncoder, view: &wgpu::TextureView) {
-        self.camera_control.update_camera(&mut self.camera);
-        queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[renderer::camera::CameraUniform::new(&self.camera)]));
-
-        self.debug_target = self.model.intersect(self.camera.pos.as_ref(), (self.camera.pos + self.camera.get_facing() * 10.0).as_ref());
-
+    pub fn render(&mut self, encoder: &mut wgpu::CommandEncoder, view: &wgpu::TextureView) {
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("[demo] Render Pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -195,5 +199,7 @@ impl Scene {
         render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.model.buffer().slice(..));
         render_pass.draw(0..6, 0..self.model.len() as u32);
+
+        self.block_outline.render(&self.camera_bind_group, &mut render_pass);
     }
 }

@@ -1,5 +1,6 @@
 mod texture;
 mod model;
+mod block_outline;
 mod control;
 mod scene;
 mod gui;
@@ -51,7 +52,7 @@ impl State {
 
         let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
             label: None,
-            required_features: wgpu::Features::empty(),
+            required_features: wgpu::Features::POLYGON_MODE_LINE,
             required_limits: if cfg!(target_arch = "wasm32") {
                 wgpu::Limits::downlevel_webgl2_defaults()
             } else {
@@ -165,7 +166,7 @@ impl State {
             label: Some("[demo] Render Encoder")
         });
 
-        self.scene.render(&self.queue, &mut encoder, &view);
+        self.scene.render(&mut encoder, &view);
 
         self.indicator_renderer.render(&mut encoder, &view);
 
