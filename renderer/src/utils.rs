@@ -18,11 +18,13 @@ impl DynamicBuffer {
     pub fn update(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, data: &[u8]) {
         let data_size = data.len() as wgpu::BufferAddress;
         let old_size = self.buffer.size();
-        eprintln!("{} / {}", data_size, old_size);
+        log::debug!("DynamicBuffer ({}): {} / {}", self.label, data_size, old_size);
+
         if data_size > old_size {
             let mut new_size = old_size;
             while new_size < data_size { new_size *= 2; }
-            eprintln!("{} -> {}", old_size, new_size);
+            log::debug!("DynamicBuffer ({}): {} -> {}", self.label, old_size, new_size);
+
             self.buffer = device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some(&self.label),
                 size: new_size,

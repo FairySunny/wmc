@@ -1,5 +1,13 @@
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
+struct Face {
+    position: [i32; 3],
+    direction: u32,
+    texture: u32
+}
+
 #[derive(Clone, Copy)]
-pub struct Direction(pub u8);
+pub struct Direction(pub u8); // TODO: Check range
 
 impl Direction {
     pub fn opposite(self) -> Self {
@@ -7,101 +15,93 @@ impl Direction {
     }
 }
 
-pub struct IntCoord(pub [i32; 3]);
+pub struct BlockPosition(pub [i32; 3]);
 
-impl IntCoord {
+impl BlockPosition {
     pub fn next(&self, direction: Direction) -> Self {
-        let mut next = self.0;
-        next[(direction.0 >> 1) as usize] += ((direction.0 & 1) << 1) as i32 - 1;
-        Self(next)
+        let mut coords = self.0;
+        coords[(direction.0 >> 1) as usize] += ((direction.0 & 1) << 1) as i32 - 1;
+        Self(coords)
     }
 }
 
 pub type TextureId = std::num::NonZeroU8;
 
-pub struct BlockModel {
+pub struct Block {
     pub faces: [Option<TextureId>; 6]
 }
 
-impl BlockModel {
+impl Block {
     pub fn face(&self, direction: Direction) -> Option<TextureId> {
         self.faces[direction.0 as usize]
     }
 }
 
-pub trait WorldInterface {
-    fn get_block(&self, coord: &IntCoord) -> &BlockModel;
-    fn is_updated(&self, coord: &IntCoord) -> bool;
-    fn get_updated_block_coords(&self) -> &[IntCoord];
+pub trait TerrainUpdate {
+    fn is_updated(&self, position: &BlockPosition) -> bool;
+    fn get_updated_positions(&self) -> &[BlockPosition];
+    fn get_block(&self, position: &BlockPosition) -> &Block;
 }
 
-#[repr(C)]
-#[derive(Clone, Copy, bytemuck::Zeroable, bytemuck::Pod)]
-struct Face {
-    coord: [i32; 3],
-    direction: u32,
-    texture: u32
-}
-
-pub struct Scene {
+pub struct Terrain {
     faces: Vec<Face>,
     buffer: crate::utils::DynamicBuffer
 }
 
-impl Scene {
+impl Terrain {
     pub fn new(device: &wgpu::Device) -> Self {
         Self {
             faces: vec![],
             buffer: crate::utils::DynamicBuffer::new(
                 device,
-                "[terrain] Face Instance Buffer".into(),
+                "Terrain (Instance)".into(),
                 512,
-                wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST
+                wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::VERTEX
             )
         }
     }
 
-    pub fn update(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, world: &impl WorldInterface) {
+    pub fn update(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, world: &impl TerrainUpdate) {
         let reserved = self.faces.drain(..).filter_map(|face| {
-            let coord = IntCoord(face.coord);
-            if world.is_updated(&coord) {
+            let position = BlockPosition(face.position);
+            if world.is_updated(&position) {
                 return None;
             }
 
-            let facing_coord = coord.next(Direction(face.direction as u8));
-            if world.is_updated(&facing_coord) {
+            let facing_position = position.next(Direction(face.direction as u8));
+            if world.is_updated(&facing_position) {
                 None
             } else {
                 Some(face)
             }
         });
 
-        let added = world.get_updated_block_coords().iter().flat_map(|coord| {
-            let block = world.get_block(coord);
+        let added = world.get_updated_positions().iter().flat_map(|position| {
+            let block = world.get_block(position);
 
-            (0..6).filter_map(move |direction| {
-                let dir = Direction(direction as u8);
-                let oppo_dir = dir.opposite();
+            (0..6).filter_map(move |direction_id| {
+                let direction = Direction(direction_id as u8);
+                let opposite = direction.opposite();
 
-                let facing_coord = coord.next(dir);
-                let facing_block = world.get_block(&facing_coord);
+                let facing_position = position.next(direction);
+                let facing_block = world.get_block(&facing_position);
 
-                let face = block.face(dir);
-                let facing_face = facing_block.face(oppo_dir);
+                let face = block.face(direction);
+                let facing_face = facing_block.face(opposite);
 
                 match face {
                     Some(texture) => match facing_face {
                         Some(_) => None,
                         None => Some(Face {
-                            coord: coord.0,
-                            direction,
+                            position: position.0,
+                            direction: direction_id,
                             texture: texture.get().into()
                         })
                     }
                     None => match facing_face {
                         Some(texture) => Some(Face {
-                            coord: facing_coord.0,
-                            direction: oppo_dir.0.into(),
+                            position: facing_position.0,
+                            direction: opposite.0.into(),
                             texture: texture.get().into()
                         }),
                         None => None
@@ -115,49 +115,37 @@ impl Scene {
         self.buffer.update(device, queue, bytemuck::cast_slice(&self.faces));
     }
 
-    pub fn len(&self) -> usize {
-        self.faces.len()
+    pub fn len(&self) -> u32 {
+        self.faces.len() as u32
     }
 
     pub fn buffer(&self) -> &wgpu::Buffer {
         self.buffer.buffer()
     }
 
-    pub fn buffer_layout<const N: u32>() -> wgpu::VertexBufferLayout<'static> {
+    pub fn buffer_layout<const LOCATION_OFFSET: u32>() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Face>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
-            attributes: &[
-                wgpu::VertexAttribute {
-                    offset: 0,
-                    shader_location: N,
-                    format: wgpu::VertexFormat::Sint32x3
-                },
-                wgpu::VertexAttribute {
-                    offset: 12,
-                    shader_location: N + 1,
-                    format: wgpu::VertexFormat::Uint32
-                },
-                wgpu::VertexAttribute {
-                    offset: 16,
-                    shader_location: N + 2,
-                    format: wgpu::VertexFormat::Uint32
-                }
-            ]
+            attributes: &const { wgpu::vertex_attr_array![
+                LOCATION_OFFSET => Sint32x3,
+                LOCATION_OFFSET + 1 => Uint32,
+                LOCATION_OFFSET + 2 => Uint32
+            ] }
         }
     }
 
     pub fn texture_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("[terrain] Texture Bind Group Layout"),
+            label: Some("Terrain (Texture)"),
             entries: &[
                 wgpu::BindGroupLayoutEntry {
                     binding: 0,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
-                        multisampled: false,
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         view_dimension: wgpu::TextureViewDimension::D2,
-                        sample_type: wgpu::TextureSampleType::Float { filterable: true }
+                        multisampled: false
                     },
                     count: None
                 },
@@ -179,38 +167,43 @@ impl Scene {
         };
 
         let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("[terrain] Texture"),
+            label: Some("Terrain"),
             size,
             mip_level_count: 5,
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING |
-                wgpu::TextureUsages::COPY_DST |
-                wgpu::TextureUsages::RENDER_ATTACHMENT,
+            usage: wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::RENDER_ATTACHMENT,
             view_formats: &[]
         });
 
-        queue.write_texture(wgpu::TexelCopyTextureInfo {
-            texture: &texture,
-            mip_level: 0,
-            origin: wgpu::Origin3d::ZERO,
-            aspect: wgpu::TextureAspect::All
-        }, data, wgpu::TexelCopyBufferLayout {
-            offset: 0,
-            bytes_per_row: Some(4 * width),
-            rows_per_image: Some(height)
-        }, size);
+        queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All
+            },
+            data,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(width * 4),
+                rows_per_image: Some(height)
+            },
+            size
+        );
 
         crate::utils::generate_mipmaps(device, queue, &texture);
 
         let view = texture.create_view(&wgpu::TextureViewDescriptor {
-            label: Some("[terrain] Texture View"),
+            label: Some("Terrain"),
             ..Default::default()
         });
 
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
-            label: Some("[terrain] Texture Sampler"),
+            label: Some("Terrain (Texture)"),
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -221,7 +214,7 @@ impl Scene {
         });
 
         device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("[terrain] Texture Bind Group"),
+            label: Some("Terrain (Texture)"),
             layout,
             entries: &[
                 wgpu::BindGroupEntry {

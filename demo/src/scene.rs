@@ -20,9 +20,9 @@ impl Scene {
         let texture_bytes = include_bytes!("texture.png");
         let texture_image = crate::texture::Image::from_bytes(texture_bytes).unwrap();
 
-        let texture_bind_group_layout = renderer::terrain::Scene::texture_bind_group_layout(device);
+        let texture_bind_group_layout = renderer::terrain::Terrain::texture_bind_group_layout(device);
 
-        let texture_bind_group = renderer::terrain::Scene::create_texture(
+        let texture_bind_group = renderer::terrain::Terrain::create_texture(
             device,
             queue,
             &texture_bind_group_layout,
@@ -88,7 +88,7 @@ impl Scene {
                 module: &shader,
                 entry_point: Some("vs_main"),
                 compilation_options: Default::default(),
-                buffers: &[Some(renderer::terrain::Scene::buffer_layout::<0>())]
+                buffers: &[Some(renderer::terrain::Terrain::buffer_layout::<0>())]
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -198,7 +198,7 @@ impl Scene {
         render_pass.set_bind_group(0, &self.texture_bind_group, &[]);
         render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.model.buffer().slice(..));
-        render_pass.draw(0..6, 0..self.model.len() as u32);
+        render_pass.draw(0..6, 0..self.model.len());
 
         self.block_outline.render(&self.camera_bind_group, &mut render_pass);
     }

@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 pub struct SimpleChunk {
     data: Box<[u32; 100 * 16 * 16]>,
-    updated: Vec<renderer::terrain::IntCoord>,
+    updated: Vec<renderer::terrain::BlockPosition>,
     updated_set: HashSet<[i32; 3]>
 }
 
@@ -34,7 +34,7 @@ impl SimpleChunk {
             let block = self.get_mut(coord);
             if block != new_block {
                 let coord = [coord[0] as i32, coord[1] as i32, coord[2] as i32];
-                updated.push(renderer::terrain::IntCoord(coord));
+                updated.push(renderer::terrain::BlockPosition(coord));
                 updated_set.insert(coord);
                 *block = *new_block;
             }
@@ -44,38 +44,38 @@ impl SimpleChunk {
     }
 }
 
-impl renderer::terrain::WorldInterface for SimpleChunk {
-    fn get_block(&self, coord: &renderer::terrain::IntCoord) -> &renderer::terrain::BlockModel {
-        const MODELS: &[renderer::terrain::BlockModel] = &[
-            renderer::terrain::BlockModel {
+impl renderer::terrain::TerrainUpdate for SimpleChunk {
+    fn is_updated(&self, position: &renderer::terrain::BlockPosition) -> bool {
+        self.updated_set.contains(&position.0)
+    }
+
+    fn get_updated_positions(&self) -> &[renderer::terrain::BlockPosition] {
+        &self.updated
+    }
+
+    fn get_block(&self, position: &renderer::terrain::BlockPosition) -> &renderer::terrain::Block {
+        const BLOCK_TYPES: &[renderer::terrain::Block] = &[
+            renderer::terrain::Block {
                 faces: [None; 6]
             },
-            renderer::terrain::BlockModel {
+            renderer::terrain::Block {
                 faces: [renderer::terrain::TextureId::new(1); 6]
             },
-            renderer::terrain::BlockModel {
+            renderer::terrain::Block {
                 faces: [renderer::terrain::TextureId::new(2); 6]
             }
         ];
 
-        let coord = [coord.0[0] as usize, coord.0[1] as usize, coord.0[2] as usize];
+        let coord = [position.0[0] as usize, position.0[1] as usize, position.0[2] as usize];
         let new = self.get(&coord);
-        &MODELS[new as usize]
-    }
-
-    fn is_updated(&self, coord: &renderer::terrain::IntCoord) -> bool {
-        self.updated_set.contains(&coord.0)
-    }
-
-    fn get_updated_block_coords(&self) -> &[renderer::terrain::IntCoord] {
-        &self.updated
+        &BLOCK_TYPES[new as usize]
     }
 }
 
 pub struct Model {
     chunk: SimpleChunk,
     i: usize,
-    scene: renderer::terrain::Scene
+    terrain: renderer::terrain::Terrain
 }
 
 impl Model {
@@ -88,13 +88,13 @@ impl Model {
             ([2, 1, 2], 1)
         ]);
 
-        let mut scene = renderer::terrain::Scene::new(&device);
-        scene.update(&device, &queue, &chunk);
+        let mut terrain = renderer::terrain::Terrain::new(&device);
+        terrain.update(&device, &queue, &chunk);
 
         Self {
             chunk,
             i: 2,
-            scene
+            terrain
         }
     }
 
@@ -111,7 +111,7 @@ impl Model {
                     ([2, self.i, 1], (i + 2) % 2 + 1),
                     ([2, self.i, 2], (i + 1) % 2 + 1)
                 ]);
-                self.scene.update(device, queue, &self.chunk);
+                self.terrain.update(device, queue, &self.chunk);
                 self.i += 1;
             }
             winit::keyboard::KeyCode::Digit2 => {
@@ -123,7 +123,7 @@ impl Model {
                     ([2, self.i, 1], 0),
                     ([2, self.i, 2], 0)
                 ]);
-                self.scene.update(device, queue, &self.chunk);
+                self.terrain.update(device, queue, &self.chunk);
             }
             _ => return false
         }
@@ -132,11 +132,11 @@ impl Model {
     }
 
     pub fn buffer(&self) -> &wgpu::Buffer {
-        self.scene.buffer()
+        self.terrain.buffer()
     }
 
-    pub fn len(&self) -> usize {
-        self.scene.len()
+    pub fn len(&self) -> u32 {
+        self.terrain.len() as u32
     }
 
     pub fn intersect(&self, from: &[f32; 3], to: &[f32; 3]) -> Option<[i32; 3]> {

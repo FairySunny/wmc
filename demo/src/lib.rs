@@ -22,7 +22,7 @@ struct State {
     config: wgpu::SurfaceConfiguration,
     is_surface_configured: bool,
     scene: scene::Scene,
-    indicator_renderer: renderer::indicator::IndicatorRenderer,
+    crosshair: renderer::crosshair::Crosshair,
     gui_renderer: gui::GuiRenderer
 }
 
@@ -90,7 +90,7 @@ impl State {
 
         let scene = scene::Scene::new(&device, &queue, &config);
 
-        let indicator_renderer = renderer::indicator::IndicatorRenderer::new(&device, config.format);
+        let crosshair = renderer::crosshair::Crosshair::new(&device, config.format);
 
         let gui_renderer = gui::GuiRenderer::new(&window, &device, &config);
 
@@ -102,7 +102,7 @@ impl State {
             config,
             is_surface_configured: false,
             scene,
-            indicator_renderer,
+            crosshair,
             gui_renderer
         }
     }
@@ -168,7 +168,7 @@ impl State {
 
         self.scene.render(&mut encoder, &view);
 
-        self.indicator_renderer.render(&mut encoder, &view);
+        self.crosshair.render(&mut encoder, &view);
 
         self.gui_renderer.render(&self.window, &self.device, &self.queue, &self.config, &mut encoder, &view, &self.scene);
 

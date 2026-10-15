@@ -1,20 +1,29 @@
-pub struct IndicatorRenderer {
+pub struct Crosshair {
     pipeline: wgpu::RenderPipeline
 }
 
-impl IndicatorRenderer {
+impl Crosshair {
     pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat) -> Self {
-        let shader = device.create_shader_module(wgpu::include_wgsl!("shaders/indicator.wgsl"));
+        let shader = device.create_shader_module(wgpu::include_wgsl!("shaders/crosshair.wgsl"));
+
+        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+            label: Some("Crosshair"),
+            bind_group_layouts: &[],
+            immediate_size: 0
+        });
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("[indicator] Render Pipeline"),
-            layout: None,
+            label: Some("Crosshair"),
+            layout: Some(&pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
                 compilation_options: Default::default(),
                 buffers: &[]
             },
+            primitive: Default::default(),
+            depth_stencil: None,
+            multisample: Default::default(),
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
                 entry_point: Some("fs_main"),
@@ -32,19 +41,18 @@ impl IndicatorRenderer {
                     write_mask: wgpu::ColorWrites::ALL
                 })]
             }),
-            primitive: Default::default(),
-            depth_stencil: None,
-            multisample: Default::default(),
             multiview_mask: None,
             cache: None
         });
 
-        Self { pipeline }
+        Self {
+            pipeline
+        }
     }
 
     pub fn render(&self, encoder: &mut wgpu::CommandEncoder, view: &wgpu::TextureView) {
         let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("[indicator] Render Pass"),
+            label: Some("Crosshair"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view,
                 depth_slice: None,
