@@ -61,7 +61,7 @@ impl CameraControl {
         }
     }
 
-    pub fn update_camera(&mut self, camera: &mut renderer::camera::Camera) {
+    pub fn update_camera_parameters(&mut self, parameters: &mut renderer::camera::CameraParameters) {
         use cgmath::Angle;
 
         let now = instant::Instant::now();
@@ -71,24 +71,24 @@ impl CameraControl {
         let mov = Self::MOV_SPEED * time_span;
         let rot = Self::ROT_SPEED * 500.0 * time_span;
 
-        camera.yaw += Self::ROT_SPEED * self.rot_right;
-        camera.pitch += Self::ROT_SPEED * self.rot_up;
-        if self.cmds & Self::CMD_ROT_RIGHT != 0 { camera.yaw += rot; }
-        if self.cmds & Self::CMD_ROT_LEFT  != 0 { camera.yaw -= rot; }
-        if self.cmds & Self::CMD_ROT_UP    != 0 { camera.pitch += rot; }
-        if self.cmds & Self::CMD_ROT_DOWN  != 0 { camera.pitch -= rot; }
-        if camera.pitch > cgmath::Deg(89.0) { camera.pitch = cgmath::Deg(89.0); }
-        if camera.pitch < cgmath::Deg(-89.0) { camera.pitch = cgmath::Deg(-89.0); }
+        parameters.yaw += Self::ROT_SPEED * self.rot_right;
+        parameters.pitch += Self::ROT_SPEED * self.rot_up;
+        if self.cmds & Self::CMD_ROT_RIGHT != 0 { parameters.yaw += rot; }
+        if self.cmds & Self::CMD_ROT_LEFT  != 0 { parameters.yaw -= rot; }
+        if self.cmds & Self::CMD_ROT_UP    != 0 { parameters.pitch += rot; }
+        if self.cmds & Self::CMD_ROT_DOWN  != 0 { parameters.pitch -= rot; }
+        if parameters.pitch > cgmath::Deg(89.0) { parameters.pitch = cgmath::Deg(89.0); }
+        if parameters.pitch < cgmath::Deg(-89.0) { parameters.pitch = cgmath::Deg(-89.0); }
 
-        let front = cgmath::Vector3::new(camera.yaw.cos(), 0.0, camera.yaw.sin());
+        let front = cgmath::Vector3::new(parameters.yaw.cos(), 0.0, parameters.yaw.sin());
         let up = cgmath::Vector3::unit_y();
 
-        if self.cmds & Self::CMD_FRONT != 0 { camera.pos += mov * front; }
-        if self.cmds & Self::CMD_BACK  != 0 { camera.pos -= mov * front; }
-        if self.cmds & Self::CMD_RIGHT != 0 { camera.pos += mov * front.cross(up); }
-        if self.cmds & Self::CMD_LEFT  != 0 { camera.pos -= mov * front.cross(up); }
-        if self.cmds & Self::CMD_UP    != 0 { camera.pos += mov * up; }
-        if self.cmds & Self::CMD_DOWN  != 0 { camera.pos -= mov * up; }
+        if self.cmds & Self::CMD_FRONT != 0 { parameters.position += mov * front; }
+        if self.cmds & Self::CMD_BACK  != 0 { parameters.position -= mov * front; }
+        if self.cmds & Self::CMD_RIGHT != 0 { parameters.position += mov * front.cross(up); }
+        if self.cmds & Self::CMD_LEFT  != 0 { parameters.position -= mov * front.cross(up); }
+        if self.cmds & Self::CMD_UP    != 0 { parameters.position += mov * up; }
+        if self.cmds & Self::CMD_DOWN  != 0 { parameters.position -= mov * up; }
 
         self.rot_right = 0.0;
         self.rot_up = 0.0;

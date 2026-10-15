@@ -3,9 +3,7 @@ pub struct Scene {
     model: crate::model::Model,
     texture_bind_group: wgpu::BindGroup,
     camera: renderer::camera::Camera,
-    camera_buffer: wgpu::Buffer,
     camera_control: crate::control::CameraControl,
-    camera_bind_group: wgpu::BindGroup,
     render_pipeline: wgpu::RenderPipeline,
     block_outline: crate::block_outline::BlockOutline,
     pub debug_target: Option<[i32; 3]>
@@ -31,41 +29,12 @@ impl Scene {
             &texture_image.data
         );
 
-        let camera = renderer::camera::Camera {
-            pos: (5.0, 5.0, 5.0).into(),
+        let camera = renderer::camera::Camera::new(device, renderer::camera::CameraParameters {
+            position: (5.0, 5.0, 5.0).into(),
             yaw: cgmath::Deg(-135.0),
             pitch: cgmath::Deg(-45.0),
             fovy: cgmath::Deg(45.0),
             aspect: config.width as f32 / config.height as f32
-        };
-
-        let camera_buffer = wgpu::util::DeviceExt::create_buffer_init(device, &wgpu::util::BufferInitDescriptor {
-            label: Some("[demo] Camera Buffer"),
-            contents: bytemuck::cast_slice(&[renderer::camera::CameraUniform::new(&camera)]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
-        });
-
-        let camera_bind_group_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: Some("[demo] Camera Bind Group Layout"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None
-                },
-                count: None
-            }]
-        });
-
-        let camera_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("[demo] Camera Bind Group"),
-            layout: &camera_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: camera_buffer.as_entire_binding()
-            }]
         });
 
         let camera_control = crate::control::CameraControl::new();
@@ -76,7 +45,7 @@ impl Scene {
             label: Some("[demo] Render Pipeline Layout"),
             bind_group_layouts: &[
                 Some(&texture_bind_group_layout),
-                Some(&camera_bind_group_layout)
+                Some(camera.get_bind_group_layout())
             ],
             immediate_size: 0
         });
@@ -125,16 +94,14 @@ impl Scene {
             cache: None
         });
 
-        let block_outline = crate::block_outline::BlockOutline::new(device, config, &camera_bind_group_layout);
+        let block_outline = crate::block_outline::BlockOutline::new(device, config, camera.get_bind_group_layout());
 
         Self {
             depth_texture_view,
             model,
             texture_bind_group,
             camera,
-            camera_buffer,
             camera_control,
-            camera_bind_group,
             render_pipeline,
             block_outline,
             debug_target: None
@@ -144,7 +111,7 @@ impl Scene {
     pub fn resize(&mut self, device: &wgpu::Device, config: &wgpu::SurfaceConfiguration, width: u32, height: u32) {
         self.depth_texture_view = crate::texture::create_depth_texture(device, config, "[demo] Depth Texture");
 
-        self.camera.aspect = width as f32 / height as f32;
+        self.camera.parameters.aspect = width as f32 / height as f32;
     }
 
     pub fn handle_key(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, down: bool, code: winit::keyboard::KeyCode) -> bool {
@@ -160,10 +127,10 @@ impl Scene {
     }
 
     pub fn update(&mut self, queue: &wgpu::Queue) {
-        self.camera_control.update_camera(&mut self.camera);
-        queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[renderer::camera::CameraUniform::new(&self.camera)]));
+        self.camera_control.update_camera_parameters(&mut self.camera.parameters);
+        self.camera.update(queue);
 
-        let block_outline_position = self.model.intersect(self.camera.pos.as_ref(), (self.camera.pos + self.camera.get_facing() * 10.0).as_ref());
+        let block_outline_position = self.model.intersect(self.camera.parameters.position.as_ref(), (self.camera.parameters.position + self.camera.parameters.get_facing() * 10.0).as_ref());
         self.debug_target = block_outline_position;
 
         self.block_outline.update(queue, block_outline_position);
@@ -196,10 +163,10 @@ impl Scene {
 
         render_pass.set_pipeline(&self.render_pipeline);
         render_pass.set_bind_group(0, &self.texture_bind_group, &[]);
-        render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
+        render_pass.set_bind_group(1, self.camera.get_bind_group(), &[]);
         render_pass.set_vertex_buffer(0, self.model.buffer().slice(..));
         render_pass.draw(0..6, 0..self.model.len());
 
-        self.block_outline.render(&self.camera_bind_group, &mut render_pass);
+        self.block_outline.render(self.camera.get_bind_group(), &mut render_pass);
     }
 }
