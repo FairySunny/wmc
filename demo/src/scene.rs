@@ -5,6 +5,7 @@ pub struct Scene {
     camera: renderer::camera::Camera,
     camera_control: crate::control::CameraControl,
     render_pipeline: wgpu::RenderPipeline,
+    #[cfg(not(target_arch = "wasm32"))]
     block_outline: crate::block_outline::BlockOutline,
     pub debug_target: Option<[i32; 3]>
 }
@@ -94,6 +95,7 @@ impl Scene {
             cache: None
         });
 
+        #[cfg(not(target_arch = "wasm32"))]
         let block_outline = crate::block_outline::BlockOutline::new(device, config, camera.get_bind_group_layout());
 
         Self {
@@ -103,6 +105,7 @@ impl Scene {
             camera,
             camera_control,
             render_pipeline,
+            #[cfg(not(target_arch = "wasm32"))]
             block_outline,
             debug_target: None
         }
@@ -133,6 +136,7 @@ impl Scene {
         let block_outline_position = self.model.intersect(self.camera.parameters.position.as_ref(), (self.camera.parameters.position + self.camera.parameters.get_facing() * 10.0).as_ref());
         self.debug_target = block_outline_position;
 
+        #[cfg(not(target_arch = "wasm32"))]
         self.block_outline.update(queue, block_outline_position);
     }
 
@@ -167,6 +171,7 @@ impl Scene {
         render_pass.set_vertex_buffer(0, self.model.buffer().slice(..));
         render_pass.draw(0..6, 0..self.model.len());
 
+        #[cfg(not(target_arch = "wasm32"))]
         self.block_outline.render(self.camera.get_bind_group(), &mut render_pass);
     }
 }

@@ -1,5 +1,6 @@
 mod texture;
 mod model;
+#[cfg(not(target_arch = "wasm32"))]
 mod block_outline;
 mod control;
 mod scene;
@@ -52,7 +53,11 @@ impl State {
 
         let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
             label: None,
-            required_features: wgpu::Features::POLYGON_MODE_LINE,
+            required_features: if cfg!(target_arch = "wasm32") {
+                wgpu::Features::empty()
+            } else {
+                wgpu::Features::POLYGON_MODE_LINE
+            },
             required_limits: if cfg!(target_arch = "wasm32") {
                 wgpu::Limits::downlevel_webgl2_defaults()
             } else {
