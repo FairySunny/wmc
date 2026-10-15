@@ -167,7 +167,7 @@ impl Terrain {
         };
 
         let texture = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Terrain"),
+            label: Some("Terrain (Texture)"),
             size,
             mip_level_count: 5,
             sample_count: 1,
@@ -198,7 +198,7 @@ impl Terrain {
         crate::utils::generate_mipmaps(device, queue, &texture);
 
         let view = texture.create_view(&wgpu::TextureViewDescriptor {
-            label: Some("Terrain"),
+            label: Some("Terrain (Texture)"),
             ..Default::default()
         });
 

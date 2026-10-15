@@ -46,7 +46,7 @@ pub struct Camera {
 impl Camera {
     pub fn new(device: &wgpu::Device, parameters: CameraParameters) -> Camera {
         let buffer = wgpu::util::DeviceExt::create_buffer_init(device, &wgpu::util::BufferInitDescriptor {
-            label: Some("Camera"),
+            label: Some("Camera (Uniform)"),
             contents: bytemuck::cast_slice(AsRef::<[f32; _]>::as_ref(&parameters.get_view_proj_mat())),
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::UNIFORM
         });
