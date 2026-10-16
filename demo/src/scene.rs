@@ -4,7 +4,6 @@ pub struct Scene {
     camera: renderer::camera::Camera,
     camera_control: crate::control::CameraControl,
     terrain_renderer: renderer::terrain::TerrainRenderer,
-    #[cfg(not(target_arch = "wasm32"))]
     block_outline: crate::block_outline::BlockOutline,
     pub debug_target: Option<([i32; 3], u32)>
 }
@@ -38,7 +37,6 @@ impl Scene {
             &texture_image.data
         );
 
-        #[cfg(not(target_arch = "wasm32"))]
         let block_outline = crate::block_outline::BlockOutline::new(device, config, camera.get_bind_group_layout());
 
         Self {
@@ -47,7 +45,6 @@ impl Scene {
             camera,
             camera_control,
             terrain_renderer,
-            #[cfg(not(target_arch = "wasm32"))]
             block_outline,
             debug_target: None
         }
@@ -78,7 +75,6 @@ impl Scene {
         let block_outline_position = self.model.intersect(self.camera.parameters.position.as_ref(), (self.camera.parameters.position + self.camera.parameters.get_facing() * 10.0).as_ref());
         self.debug_target = block_outline_position.map(|pos| (pos, self.model.get(&pos)));
 
-        #[cfg(not(target_arch = "wasm32"))]
         self.block_outline.update(queue, block_outline_position);
     }
 
@@ -113,7 +109,6 @@ impl Scene {
             self.model.get_terrain_model()
         );
 
-        #[cfg(not(target_arch = "wasm32"))]
         self.block_outline.render(self.camera.get_bind_group(), &mut render_pass);
     }
 }

@@ -9,7 +9,7 @@ impl BlockOutline {
     pub fn new(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration, camera_bind_group_layout: &wgpu::BindGroupLayout) -> Self {
         let position_buffer = wgpu::util::DeviceExt::create_buffer_init(device, &wgpu::util::BufferInitDescriptor {
             label: Some("[demo block_outline] Position Buffer"),
-            contents: bytemuck::cast_slice(&[0i32; 3]),
+            contents: bytemuck::cast_slice(&[0i32; 4]),
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
         });
 
@@ -62,7 +62,7 @@ impl BlockOutline {
                 front_face: wgpu::FrontFace::Ccw,
                 cull_mode: None,
                 unclipped_depth: false,
-                polygon_mode: wgpu::PolygonMode::Line,
+                polygon_mode: wgpu::PolygonMode::Fill,
                 conservative: false
             },
             depth_stencil: Some(wgpu::DepthStencilState {
