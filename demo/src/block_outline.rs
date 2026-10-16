@@ -66,7 +66,7 @@ impl BlockOutline {
                 conservative: false
             },
             depth_stencil: Some(wgpu::DepthStencilState {
-                format: crate::texture::DEPTH_FORMAT,
+                format: renderer::util::DEPTH_FORMAT,
                 depth_write_enabled: Some(false),
                 depth_compare: Some(wgpu::CompareFunction::Always),
                 stencil: Default::default(),

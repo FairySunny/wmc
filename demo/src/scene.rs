@@ -11,7 +11,7 @@ pub struct Scene {
 
 impl Scene {
     pub fn new(device: &wgpu::Device, queue: &wgpu::Queue, config: &wgpu::SurfaceConfiguration) -> Self {
-        let depth_texture_view = crate::texture::create_depth_texture(device, config, "[demo] Depth Texture");
+        let depth_view = renderer::util::new_depth_texture(device, config);
 
         let model = crate::model::Model::new(device, queue);
 
@@ -31,7 +31,7 @@ impl Scene {
             device,
             queue,
             config.format,
-            crate::texture::DEPTH_FORMAT,
+            renderer::util::DEPTH_FORMAT,
             camera.get_bind_group_layout(),
             texture_image.width,
             texture_image.height,
@@ -42,7 +42,7 @@ impl Scene {
         let block_outline = crate::block_outline::BlockOutline::new(device, config, camera.get_bind_group_layout());
 
         Self {
-            depth_texture_view,
+            depth_texture_view: depth_view,
             model,
             camera,
             camera_control,
@@ -54,7 +54,7 @@ impl Scene {
     }
 
     pub fn resize(&mut self, device: &wgpu::Device, config: &wgpu::SurfaceConfiguration, width: u32, height: u32) {
-        self.depth_texture_view = crate::texture::create_depth_texture(device, config, "[demo] Depth Texture");
+        self.depth_texture_view = renderer::util::new_depth_texture(device, config);
 
         self.camera.parameters.aspect = width as f32 / height as f32;
     }
