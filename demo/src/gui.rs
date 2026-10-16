@@ -55,7 +55,13 @@ impl GuiRenderer {
 
         let mut full_output = self.context.run_ui(raw_input, |ctx| {
             egui::Panel::left("My Panel").exact_size(150.0).show(ctx, |ui| {
-                ui.label(format!("Target: {:?}", scene.debug_target));
+                match scene.debug_target {
+                    Some((pos, id)) => {
+                        ui.label(format!("Target Pos: {:?}", pos));
+                        ui.label(format!("Target ID: {:?}", id));
+                    }
+                    None => {}
+                }
             });
         });
 

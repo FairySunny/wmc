@@ -7,7 +7,7 @@ pub struct Scene {
     render_pipeline: wgpu::RenderPipeline,
     #[cfg(not(target_arch = "wasm32"))]
     block_outline: crate::block_outline::BlockOutline,
-    pub debug_target: Option<[i32; 3]>
+    pub debug_target: Option<([i32; 3], u32)>
 }
 
 impl Scene {
@@ -134,7 +134,7 @@ impl Scene {
         self.camera.update(queue);
 
         let block_outline_position = self.model.intersect(self.camera.parameters.position.as_ref(), (self.camera.parameters.position + self.camera.parameters.get_facing() * 10.0).as_ref());
-        self.debug_target = block_outline_position;
+        self.debug_target = block_outline_position.map(|pos| (pos, self.model.get(&pos)));
 
         #[cfg(not(target_arch = "wasm32"))]
         self.block_outline.update(queue, block_outline_position);

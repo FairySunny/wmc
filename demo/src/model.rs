@@ -139,6 +139,10 @@ impl Model {
         self.terrain.len() as u32
     }
 
+    pub fn get(&self, coord: &[i32; 3]) -> u32 {
+        self.chunk.get(&coord.map(|x| x as usize))
+    }
+
     pub fn intersect(&self, from: &[f32; 3], to: &[f32; 3]) -> Option<[i32; 3]> {
         if from.iter().any(|x| !x.is_finite()) || from == to {
             return None;
