@@ -132,11 +132,11 @@ impl Model {
     }
 
     pub fn buffer(&self) -> &wgpu::Buffer {
-        self.terrain.buffer()
+        self.terrain.get_instance_buffer()
     }
 
     pub fn len(&self) -> u32 {
-        self.terrain.len() as u32
+        self.terrain.get_instance_count() as u32
     }
 
     pub fn get(&self, coord: &[i32; 3]) -> u32 {

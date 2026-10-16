@@ -19,9 +19,9 @@ impl Scene {
         let texture_bytes = include_bytes!("texture.png");
         let texture_image = crate::texture::Image::from_bytes(texture_bytes).unwrap();
 
-        let texture_bind_group_layout = renderer::terrain::Terrain::texture_bind_group_layout(device);
+        let texture_bind_group_layout = renderer::terrain::Terrain::new_texture_bind_group_layout(device);
 
-        let texture_bind_group = renderer::terrain::Terrain::create_texture(
+        let texture_bind_group = renderer::terrain::Terrain::new_texture(
             device,
             queue,
             &texture_bind_group_layout,
@@ -58,7 +58,7 @@ impl Scene {
                 module: &shader,
                 entry_point: Some("vs_main"),
                 compilation_options: Default::default(),
-                buffers: &[Some(renderer::terrain::Terrain::buffer_layout::<0>())]
+                buffers: &[Some(renderer::terrain::Terrain::get_instance_buffer_layout::<0>())]
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,

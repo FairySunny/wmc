@@ -61,30 +61,30 @@ impl Terrain {
         }
     }
 
-    pub fn update(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, world: &impl TerrainUpdate) {
+    pub fn update(&mut self, device: &wgpu::Device, queue: &wgpu::Queue, update: &impl TerrainUpdate) {
         let reserved = self.faces.drain(..).filter_map(|face| {
             let position = BlockPosition(face.position);
-            if world.is_updated(&position) {
+            if update.is_updated(&position) {
                 return None;
             }
 
             let facing_position = position.next(Direction(face.direction as u8));
-            if world.is_updated(&facing_position) {
+            if update.is_updated(&facing_position) {
                 None
             } else {
                 Some(face)
             }
         });
 
-        let added = world.get_updated_positions().iter().flat_map(|position| {
-            let block = world.get_block(position);
+        let added = update.get_updated_positions().iter().flat_map(|position| {
+            let block = update.get_block(position);
 
             (0..6).filter_map(move |direction_id| {
                 let direction = Direction(direction_id as u8);
                 let opposite = direction.opposite();
 
                 let facing_position = position.next(direction);
-                let facing_block = world.get_block(&facing_position);
+                let facing_block = update.get_block(&facing_position);
 
                 let face = block.face(direction);
                 let facing_face = facing_block.face(opposite);
@@ -115,15 +115,15 @@ impl Terrain {
         self.buffer.update(device, queue, bytemuck::cast_slice(&self.faces));
     }
 
-    pub fn len(&self) -> u32 {
-        self.faces.len() as u32
-    }
-
-    pub fn buffer(&self) -> &wgpu::Buffer {
+    pub fn get_instance_buffer(&self) -> &wgpu::Buffer {
         self.buffer.buffer()
     }
 
-    pub fn buffer_layout<const LOCATION_OFFSET: u32>() -> wgpu::VertexBufferLayout<'static> {
+    pub fn get_instance_count(&self) -> u32 {
+        self.faces.len() as u32
+    }
+
+    pub const fn get_instance_buffer_layout<const LOCATION_OFFSET: u32>() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
             array_stride: std::mem::size_of::<Face>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
@@ -135,7 +135,7 @@ impl Terrain {
         }
     }
 
-    pub fn texture_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+    pub fn new_texture_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("Terrain (Texture)"),
             entries: &[
@@ -159,7 +159,7 @@ impl Terrain {
         })
     }
 
-    pub fn create_texture(
+    pub fn new_texture(
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         layout: &wgpu::BindGroupLayout,
