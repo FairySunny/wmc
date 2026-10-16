@@ -1,10 +1,9 @@
 pub struct Scene {
     depth_texture_view: wgpu::TextureView,
     model: crate::model::Model,
-    texture_bind_group: wgpu::BindGroup,
     camera: renderer::camera::Camera,
     camera_control: crate::control::CameraControl,
-    render_pipeline: wgpu::RenderPipeline,
+    terrain_renderer: renderer::terrain::TerrainRenderer,
     #[cfg(not(target_arch = "wasm32"))]
     block_outline: crate::block_outline::BlockOutline,
     pub debug_target: Option<([i32; 3], u32)>
@@ -16,20 +15,6 @@ impl Scene {
 
         let model = crate::model::Model::new(device, queue);
 
-        let texture_bytes = include_bytes!("texture.png");
-        let texture_image = crate::texture::Image::from_bytes(texture_bytes).unwrap();
-
-        let texture_bind_group_layout = renderer::terrain::Terrain::new_texture_bind_group_layout(device);
-
-        let texture_bind_group = renderer::terrain::Terrain::new_texture(
-            device,
-            queue,
-            &texture_bind_group_layout,
-            texture_image.width,
-            texture_image.height,
-            &texture_image.data
-        );
-
         let camera = renderer::camera::Camera::new(device, renderer::camera::CameraParameters {
             position: (5.0, 5.0, 5.0).into(),
             yaw: cgmath::Deg(-135.0),
@@ -40,60 +25,18 @@ impl Scene {
 
         let camera_control = crate::control::CameraControl::new();
 
-        let shader = device.create_shader_module(wgpu::include_wgsl!("../../renderer/src/shaders/terrain.wgsl"));
+        let texture_image = crate::texture::Image::from_bytes(include_bytes!("texture.png")).unwrap();
 
-        let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("[demo] Render Pipeline Layout"),
-            bind_group_layouts: &[
-                Some(camera.get_bind_group_layout()),
-                Some(&texture_bind_group_layout)
-            ],
-            immediate_size: 0
-        });
-
-        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
-            label: Some("[demo] Render Pipeline"),
-            layout: Some(&render_pipeline_layout),
-            vertex: wgpu::VertexState {
-                module: &shader,
-                entry_point: Some("vs_main"),
-                compilation_options: Default::default(),
-                buffers: &[Some(renderer::terrain::Terrain::get_instance_buffer_layout::<0>())]
-            },
-            fragment: Some(wgpu::FragmentState {
-                module: &shader,
-                entry_point: Some("fs_main"),
-                compilation_options: Default::default(),
-                targets: &[Some(wgpu::ColorTargetState {
-                    format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
-                    write_mask: wgpu::ColorWrites::ALL
-                })]
-            }),
-            primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList,
-                strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw,
-                cull_mode: Some(wgpu::Face::Back),
-                polygon_mode: wgpu::PolygonMode::Fill,
-                unclipped_depth: false,
-                conservative: false
-            },
-            depth_stencil: Some(wgpu::DepthStencilState {
-                format: crate::texture::DEPTH_FORMAT,
-                depth_write_enabled: Some(true),
-                depth_compare: Some(wgpu::CompareFunction::Less),
-                stencil: Default::default(),
-                bias: Default::default()
-            }),
-            multisample: wgpu::MultisampleState {
-                count: 1,
-                mask: !0,
-                alpha_to_coverage_enabled: false
-            },
-            multiview_mask: None,
-            cache: None
-        });
+        let terrain_renderer = renderer::terrain::TerrainRenderer::new(
+            device,
+            queue,
+            config.format,
+            crate::texture::DEPTH_FORMAT,
+            camera.get_bind_group_layout(),
+            texture_image.width,
+            texture_image.height,
+            &texture_image.data
+        );
 
         #[cfg(not(target_arch = "wasm32"))]
         let block_outline = crate::block_outline::BlockOutline::new(device, config, camera.get_bind_group_layout());
@@ -101,10 +44,9 @@ impl Scene {
         Self {
             depth_texture_view,
             model,
-            texture_bind_group,
             camera,
             camera_control,
-            render_pipeline,
+            terrain_renderer,
             #[cfg(not(target_arch = "wasm32"))]
             block_outline,
             debug_target: None
@@ -165,11 +107,11 @@ impl Scene {
             multiview_mask: None
         });
 
-        render_pass.set_pipeline(&self.render_pipeline);
-        render_pass.set_bind_group(0, self.camera.get_bind_group(), &[]);
-        render_pass.set_bind_group(1, &self.texture_bind_group, &[]);
-        render_pass.set_vertex_buffer(0, self.model.buffer().slice(..));
-        render_pass.draw(0..6, 0..self.model.len());
+        self.terrain_renderer.render(
+            &mut render_pass,
+            self.camera.get_bind_group(),
+            self.model.get_terrain_model()
+        );
 
         #[cfg(not(target_arch = "wasm32"))]
         self.block_outline.render(self.camera.get_bind_group(), &mut render_pass);

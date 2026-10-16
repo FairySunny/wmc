@@ -75,7 +75,7 @@ impl renderer::terrain::TerrainUpdate for SimpleChunk {
 pub struct Model {
     chunk: SimpleChunk,
     i: usize,
-    terrain: renderer::terrain::Terrain
+    terrain_model: renderer::terrain::TerrainModel
 }
 
 impl Model {
@@ -88,13 +88,13 @@ impl Model {
             ([2, 1, 2], 1)
         ]);
 
-        let mut terrain = renderer::terrain::Terrain::new(&device);
-        terrain.update(&device, &queue, &chunk);
+        let mut terrain_model = renderer::terrain::TerrainModel::new(&device);
+        terrain_model.update(&device, &queue, &chunk);
 
         Self {
             chunk,
             i: 2,
-            terrain
+            terrain_model
         }
     }
 
@@ -111,7 +111,7 @@ impl Model {
                     ([2, self.i, 1], (i + 2) % 2 + 1),
                     ([2, self.i, 2], (i + 1) % 2 + 1)
                 ]);
-                self.terrain.update(device, queue, &self.chunk);
+                self.terrain_model.update(device, queue, &self.chunk);
                 self.i += 1;
             }
             winit::keyboard::KeyCode::Digit2 => {
@@ -123,7 +123,7 @@ impl Model {
                     ([2, self.i, 1], 0),
                     ([2, self.i, 2], 0)
                 ]);
-                self.terrain.update(device, queue, &self.chunk);
+                self.terrain_model.update(device, queue, &self.chunk);
             }
             _ => return false
         }
@@ -131,12 +131,8 @@ impl Model {
         return true;
     }
 
-    pub fn buffer(&self) -> &wgpu::Buffer {
-        self.terrain.get_instance_buffer()
-    }
-
-    pub fn len(&self) -> u32 {
-        self.terrain.get_instance_count() as u32
+    pub fn get_terrain_model(&self) -> &renderer::terrain::TerrainModel {
+        &self.terrain_model
     }
 
     pub fn get(&self, coord: &[i32; 3]) -> u32 {

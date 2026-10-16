@@ -6,15 +6,9 @@ impl Crosshair {
     pub fn new(device: &wgpu::Device, format: wgpu::TextureFormat) -> Self {
         let shader = device.create_shader_module(wgpu::include_wgsl!("shaders/crosshair.wgsl"));
 
-        let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Crosshair"),
-            bind_group_layouts: &[],
-            immediate_size: 0
-        });
-
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Crosshair"),
-            layout: Some(&pipeline_layout),
+            layout: None,
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
@@ -51,7 +45,7 @@ impl Crosshair {
     }
 
     pub fn render(&self, encoder: &mut wgpu::CommandEncoder, view: &wgpu::TextureView) {
-        let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Crosshair"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view,
@@ -68,7 +62,7 @@ impl Crosshair {
             multiview_mask: None
         });
 
-        rpass.set_pipeline(&self.pipeline);
-        rpass.draw(0..3, 0..1);
+        render_pass.set_pipeline(&self.pipeline);
+        render_pass.draw(0..3, 0..1);
     }
 }
