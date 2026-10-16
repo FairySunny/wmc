@@ -6,7 +6,7 @@ pub struct BlockOutline {
 }
 
 impl BlockOutline {
-    pub fn new(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration, camera_bind_group_layout: &wgpu::BindGroupLayout) -> BlockOutline {
+    pub fn new(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration, camera_bind_group_layout: &wgpu::BindGroupLayout) -> Self {
         let position_buffer = wgpu::util::DeviceExt::create_buffer_init(device, &wgpu::util::BufferInitDescriptor {
             label: Some("[demo block_outline] Position Buffer"),
             contents: bytemuck::cast_slice(&[0i32; 3]),
@@ -91,7 +91,7 @@ impl BlockOutline {
             cache: None
         });
 
-        BlockOutline {
+        Self {
             render_pipeline,
             position_buffer,
             should_render: false,
