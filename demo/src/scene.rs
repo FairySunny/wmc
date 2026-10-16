@@ -45,8 +45,8 @@ impl Scene {
         let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("[demo] Render Pipeline Layout"),
             bind_group_layouts: &[
-                Some(&texture_bind_group_layout),
-                Some(camera.get_bind_group_layout())
+                Some(camera.get_bind_group_layout()),
+                Some(&texture_bind_group_layout)
             ],
             immediate_size: 0
         });
@@ -166,8 +166,8 @@ impl Scene {
         });
 
         render_pass.set_pipeline(&self.render_pipeline);
-        render_pass.set_bind_group(0, &self.texture_bind_group, &[]);
-        render_pass.set_bind_group(1, self.camera.get_bind_group(), &[]);
+        render_pass.set_bind_group(0, self.camera.get_bind_group(), &[]);
+        render_pass.set_bind_group(1, &self.texture_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.model.buffer().slice(..));
         render_pass.draw(0..6, 0..self.model.len());
 

@@ -3,7 +3,7 @@
 struct Face {
     position: [i32; 3],
     direction: u32,
-    texture: u32
+    texture_id: u32
 }
 
 #[derive(Clone, Copy)]
@@ -90,19 +90,19 @@ impl Terrain {
                 let facing_face = facing_block.face(opposite);
 
                 match face {
-                    Some(texture) => match facing_face {
+                    Some(texture_id) => match facing_face {
                         Some(_) => None,
                         None => Some(Face {
                             position: position.0,
                             direction: direction_id,
-                            texture: texture.get().into()
+                            texture_id: texture_id.get().into()
                         })
                     }
                     None => match facing_face {
-                        Some(texture) => Some(Face {
+                        Some(texture_id) => Some(Face {
                             position: facing_position.0,
                             direction: opposite.0.into(),
-                            texture: texture.get().into()
+                            texture_id: texture_id.get().into()
                         }),
                         None => None
                     }

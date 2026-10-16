@@ -41,8 +41,8 @@ impl BlockOutline {
         let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("[demo block_outline] Render Pipeline Layout"),
             bind_group_layouts: &[
-                Some(camera_bind_group_layout),
-                Some(&position_bind_group_layout)
+                Some(&position_bind_group_layout),
+                Some(camera_bind_group_layout)
             ],
             immediate_size: 0
         });
@@ -112,8 +112,8 @@ impl BlockOutline {
         }
 
         render_pass.set_pipeline(&self.render_pipeline);
-        render_pass.set_bind_group(0, camera_bind_group, &[]);
-        render_pass.set_bind_group(1, &self.position_bind_group, &[]);
+        render_pass.set_bind_group(0, &self.position_bind_group, &[]);
+        render_pass.set_bind_group(1, camera_bind_group, &[]);
         render_pass.draw(0..24, 0..1);
     }
 }

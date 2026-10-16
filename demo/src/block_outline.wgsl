@@ -1,11 +1,7 @@
-struct CameraUniform {
-    view_proj_mat: mat4x4<f32>
-}
-
 @group(0) @binding(0)
-var<uniform> camera: CameraUniform;
-@group(1) @binding(0)
 var<uniform> position: vec3<i32>;
+@group(1) @binding(0)
+var<uniform> view_proj_mat: mat4x4<f32>;
 
 struct VertexOutput {
     @builtin(position) position: vec4<f32>
@@ -24,14 +20,14 @@ fn vs_main(@builtin(vertex_index) idx: u32) -> VertexOutput {
         y_idx = idx_in_line;
     }
 
-    let local_pos = vec3<u32>(xz_idx & 1u, y_idx, xz_idx >> 1u);
+    let local_pos = vec3(xz_idx & 1u, y_idx, xz_idx >> 1u);
 
     let pos = vec3<f32>(position) + vec3<f32>(local_pos);
 
-    return VertexOutput(camera.view_proj_mat * vec4(pos, 1.0));
+    return VertexOutput(view_proj_mat * vec4(pos, 1f));
 }
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(0.0, 0.0, 0.0, 1.0);
+    return vec4(0f, 0f, 0f, 1f);
 }

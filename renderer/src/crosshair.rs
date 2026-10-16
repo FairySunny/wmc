@@ -69,6 +69,6 @@ impl Crosshair {
         });
 
         rpass.set_pipeline(&self.pipeline);
-        rpass.draw(0..6, 0..1);
+        rpass.draw(0..3, 0..1);
     }
 }
