@@ -1,7 +1,6 @@
 pub struct GuiRenderer {
     context: egui::Context,
     renderer: egui_wgpu::Renderer,
-    #[cfg(not(target_arch = "wasm32"))]
     state: egui_winit::State
 }
 
@@ -15,7 +14,6 @@ impl GuiRenderer {
             Default::default()
         );
 
-        #[cfg(not(target_arch = "wasm32"))]
         let window_state = egui_winit::State::new(
             context.clone(),
             context.viewport_id(),
@@ -28,17 +26,12 @@ impl GuiRenderer {
         Self {
             context,
             renderer,
-            #[cfg(not(target_arch = "wasm32"))]
             state: window_state
         }
     }
 
     pub fn handle_events(&mut self, #[allow(unused)] window: &winit::window::Window, #[allow(unused)] event: &winit::event::WindowEvent) -> bool {
-        #[cfg(not(target_arch = "wasm32"))]
-        { self.state.on_window_event(window, event).consumed }
-
-        #[cfg(target_arch = "wasm32")]
-        false
+        self.state.on_window_event(window, event).consumed
     }
 
     pub fn render(&mut self, #[allow(unused)] window: &winit::window::Window, device: &wgpu::Device, queue: &wgpu::Queue, config: &wgpu::SurfaceConfiguration, encoder: &mut wgpu::CommandEncoder, view: &wgpu::TextureView, scene: &crate::scene::Scene) {
@@ -47,11 +40,7 @@ impl GuiRenderer {
             pixels_per_point: self.context.pixels_per_point()
         };
 
-        #[cfg(not(target_arch = "wasm32"))]
         let raw_input = self.state.take_egui_input(window);
-
-        #[cfg(target_arch = "wasm32")]
-        let raw_input = Default::default();
 
         let mut full_output = self.context.run_ui(raw_input, |ctx| {
             egui::Panel::left("My Panel").exact_size(150.0).show(ctx, |ui| {
@@ -65,7 +54,6 @@ impl GuiRenderer {
             });
         });
 
-        #[cfg(not(target_arch = "wasm32"))]
         self.state.handle_platform_output(window, full_output.platform_output);
 
         let tris = self.context.tessellate(full_output.shapes, full_output.pixels_per_point);
